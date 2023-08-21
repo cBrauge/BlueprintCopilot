@@ -7,16 +7,16 @@
 
 /**
  * Class handling UICommands of the editor.
- * Currently only "Open My Plugin" commands is required.
+ * Currently only "Open BlueprintCopilot" commands is required.
  * It is done via commands, because we want to have a keyboard shortcut for it.
  */
 
-class MYPLUGINEDITOR_API FMyPluginEditorCommands : public TCommands<FMyPluginEditorCommands>
+class BLUEPRINTCOPILOT_API FBlueprintCopilotCommands : public TCommands<FBlueprintCopilotCommands>
 {
 
 public:
 
-	FMyPluginEditorCommands();
+	FBlueprintCopilotCommands();
 	void RegisterCommands() override;
-	TSharedPtr<FUICommandInfo> OpenMyPluginWindow;
+	TSharedPtr<FUICommandInfo> OpenBlueprintCopilotWindow;
 };

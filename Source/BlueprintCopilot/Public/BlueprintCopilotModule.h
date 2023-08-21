@@ -5,12 +5,13 @@
 #include "CoreMinimal.h"
 #include "UObject/GCObject.h"
 #include "Modules/ModuleManager.h"
+DECLARE_LOG_CATEGORY_EXTERN(BlueprintCopilot2, Log, All);
 
 /**
  * Editor module, which handles Editor object and DockTab creation.
  */
 
-class MYPLUGINEDITOR_API FMyPluginEditorModule : public IModuleInterface, public FGCObject
+class BLUEPRINTCOPILOT_API FBlueprintCopilotModule : public IModuleInterface, public FGCObject
 {
 
 public:
@@ -56,7 +57,7 @@ private:
 	void InvokeEditorSpawn();
 	
 	// Editor object.
-	class UMyPluginEditorBase* Editor;
+	class UBlueprintCopilotBase* Editor;
 
 	// DockTab reference with the editor.
 	TWeakPtr<class SDockTab> EditorTab;

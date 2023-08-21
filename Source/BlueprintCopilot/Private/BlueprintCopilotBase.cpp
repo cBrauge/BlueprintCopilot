@@ -1,7 +1,7 @@
 // Copyright (c) 2022 Damian Nowakowski. All rights reserved.
 
-#include "MyPluginEditorBase.h"
-#include "MyPluginEditorWidget.h"
+#include "BlueprintCopilotBase.h"
+#include "BlueprintCopilotWidget.h"
 
 #if ((ENGINE_MAJOR_VERSION == 5) && (ENGINE_MINOR_VERSION >= 1))
 #include "AssetRegistry/AssetRegistryModule.h"
@@ -13,52 +13,69 @@
 #include "EditorUtilitySubsystem.h"
 #include "EditorUtilityWidgetBlueprint.h"
 #include "LevelEditor.h"
+DEFINE_LOG_CATEGORY(BlueprintCopilot)
 
-void UMyPluginEditorBase::Init()
+void UBlueprintCopilotBase::Init()
 {
 	// Empty virtual function - to be overridden
 }
 
-void UMyPluginEditorBase::InitializeTheWidget()
+void UBlueprintCopilotBase::InitializeTheWidget()
 {
 	// Empty virtual function - to be overridden
 }
 
-void UMyPluginEditorBase::SetEditorTab(const TSharedRef<SDockTab>& NewEditorTab)
+void UBlueprintCopilotBase::SetEditorTab(const TSharedRef<SDockTab>& NewEditorTab)
 {
 	EditorTab = NewEditorTab;
 }
 
-UEditorUtilityWidgetBlueprint* UMyPluginEditorBase::GetUtilityWidgetBlueprint()
+UEditorUtilityWidgetBlueprint* UBlueprintCopilotBase::GetUtilityWidgetBlueprint()
 {
 	// Get the Editor Utility Widget Blueprint from the content directory.
 	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
 #if ((ENGINE_MAJOR_VERSION == 5) && (ENGINE_MINOR_VERSION >= 1))
-	FAssetData AssetData = AssetRegistryModule.Get().GetAssetByObjectPath(FSoftObjectPath("/MyPlugin/MyPluginWidget_BP.MyPluginWidget_BP"));
+	FAssetData AssetData = AssetRegistryModule.Get().GetAssetByObjectPath(FSoftObjectPath("/BlueprintCopilot/BlueprintCopilotWidget_BP.BlueprintCopilotWidget_BP"));
 #else
-	FAssetData AssetData = AssetRegistryModule.Get().GetAssetByObjectPath("/MyPlugin/MyPluginWidget_BP.MyPluginWidget_BP");
+	FAssetData AssetData = AssetRegistryModule.Get().GetAssetByObjectPath("/BlueprintCopilot/BlueprintCopilotWidget_BP.BlueprintCopilotWidget_BP");
 #endif
 	return Cast<UEditorUtilityWidgetBlueprint>(AssetData.GetAsset());
 }
 
-bool UMyPluginEditorBase::CanCreateEditorUI()
+bool UBlueprintCopilotBase::CanCreateEditorUI()
 {
-	// Editor UI can be created only when we have proper Editor Utility Widget Blueprint available.
-	return GetUtilityWidgetBlueprint() != nullptr;
+auto t = GetUtilityWidgetBlueprint() != nullptr;
+if (t)
+{
+		UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Can Create Editor UI"));
+}
+else {
+		UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Canttttttt Create Editor UI"));
+
 }
 
-TSharedRef<SWidget> UMyPluginEditorBase::CreateEditorUI()
+	return true;
+
+	// Editor UI can be created only when we have proper Editor Utility Widget Blueprint available.
+	// return GetUtilityWidgetBlueprint() != nullptr;
+}
+
+TSharedRef<SWidget> UBlueprintCopilotBase::CreateEditorUI()
 {
+		UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Create Editor UI"));
+
 	// Register OnMapChanged event so we can properly handle Tab and Widget when changing levels.
 	FLevelEditorModule& LevelEditor = FModuleManager::LoadModuleChecked<FLevelEditorModule>("LevelEditor");
-	LevelEditor.OnMapChanged().AddUObject(this, &UMyPluginEditorBase::ChangeTabWorld);
+	LevelEditor.OnMapChanged().AddUObject(this, &UBlueprintCopilotBase::ChangeTabWorld);
 
 	// Create the Widget
 	return CreateEditorWidget();
 }
 
-TSharedRef<SWidget> UMyPluginEditorBase::CreateEditorWidget()
+TSharedRef<SWidget> UBlueprintCopilotBase::CreateEditorWidget()
 {
+		UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Create Editor Widget"));
+
 	TSharedRef<SWidget> CreatedWidget = SNullWidget::NullWidget;
 	if (UEditorUtilityWidgetBlueprint* UtilityWidgetBP = GetUtilityWidgetBlueprint())
 	{
@@ -66,7 +83,7 @@ TSharedRef<SWidget> UMyPluginEditorBase::CreateEditorWidget()
 		CreatedWidget = UtilityWidgetBP->CreateUtilityWidget();
 
 		// Save the pointer to the created Widget and initialize it.
-		EditorWidget = Cast<UMyPluginEditorWidget>(UtilityWidgetBP->GetCreatedWidget());
+		EditorWidget = Cast<UBlueprintCopilotWidget>(UtilityWidgetBP->GetCreatedWidget());
 		if (EditorWidget)
 		{
 			InitializeTheWidget();
@@ -77,9 +94,10 @@ TSharedRef<SWidget> UMyPluginEditorBase::CreateEditorWidget()
 	return CreatedWidget;
 }
 
-void UMyPluginEditorBase::ChangeTabWorld(UWorld* World, EMapChangeType MapChangeType)
+void UBlueprintCopilotBase::ChangeTabWorld(UWorld* World, EMapChangeType MapChangeType)
 {
 	// Handle the event when editor map changes.
+		UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Change Tab World"));
 	if (MapChangeType == EMapChangeType::TearDownWorld)
 	{
 		// If the world is destroyed - set the Tab content to null and null the Widget.

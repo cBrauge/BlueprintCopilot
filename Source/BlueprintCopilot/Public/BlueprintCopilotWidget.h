@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EditorUtilityWidget.h"
-#include "MyPluginEditorWidget.generated.h"
+#include "BlueprintCopilotWidget.generated.h"
 
 /**
  * Widget code used to communicate between code and BP widget.
@@ -17,7 +17,7 @@
 DECLARE_DELEGATE(FOnTestButton);
 
 UCLASS()
-class MYPLUGINEDITOR_API UMyPluginEditorWidget : public UEditorUtilityWidget
+class BLUEPRINTCOPILOT_API UBlueprintCopilotWidget : public UEditorUtilityWidget
 {
 	GENERATED_BODY()
 
@@ -32,12 +32,12 @@ public:
 	/**
 	 * "Global Namespace" option has been changed on the Widget.
 	 */
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION(BlueprintCallable, category = "Blueprint")
 	void TestButtonPressed();
 
 
 	/**
-	 * Callbacks to be binded to the MyPluginEditor methods.
+	 * Callbacks to be binded to the BlueprintCopilot methods.
 	 */
 	FOnTestButton OnTestButtonPressedDelegate;
 };

@@ -3,16 +3,18 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "MyPluginEditorBase.generated.h"
+#include "BlueprintCopilotBase.generated.h"
 
 /**
  * Editor object handles all of the basic logic of the Plugin.
  * It's tasks are to create a widget which is put into the dock.
  * Override it to add extra logic the editor should handle.
  */
+DECLARE_LOG_CATEGORY_EXTERN(BlueprintCopilot, Log, All);
+
 
 UCLASS()
-class MYPLUGINEDITOR_API UMyPluginEditorBase : public UObject
+class BLUEPRINTCOPILOT_API UBlueprintCopilotBase : public UObject
 {
 
 	GENERATED_BODY()
@@ -52,7 +54,7 @@ protected:
 	// Handler of the created Editor Utility Widget. 
 	// Is created in CreateEditorWidget().
 	UPROPERTY()
-	class UMyPluginEditorWidget* EditorWidget;
+	class UBlueprintCopilotWidget* EditorWidget;
 
 private:
 

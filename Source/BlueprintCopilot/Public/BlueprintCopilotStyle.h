@@ -10,7 +10,7 @@
  * Currently used only for menu and tab icon.
  */
 
-class MYPLUGINEDITOR_API FMyPluginEditorStyle
+class BLUEPRINTCOPILOT_API FBlueprintCopilotStyle
 {
 public:
 
@@ -30,7 +30,7 @@ public:
 	static void ReloadTextures();
 
 	/**
-	 * Returns the MyPlugin style set name. 
+	 * Returns the BlueprintCopilot style set name. 
 	 */
 	static FName GetStyleSetName();
 

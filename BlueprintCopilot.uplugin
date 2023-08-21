@@ -1,0 +1,27 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "0.0.1",
+	"FriendlyName": "BlueprintCopilot",
+	"Description": "Bringing the power of ChatGPT inside Unreal Engine Editor",
+	"Category": "Others",
+	"CreatedBy": "Corentin Brauge",
+	"CreatedByURL": "",
+	"DocsURL": "https://github.com/cBrauge/BlueprintCopilot",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": true,
+	"SupportedTargetPlatforms": [
+		"Win64"
+	],
+	"Modules": [
+		{
+			"Name": "BlueprintCopilot",
+			"Type": "Editor",
+			"LoadingPhase": "PreDefault"
+		}
+	]
+}

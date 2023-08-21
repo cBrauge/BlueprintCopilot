@@ -2,27 +2,27 @@
 
 #pragma once
 
-#include "MyPluginEditorBase.h"
-#include "MyPluginEditor.generated.h"
+#include "BlueprintCopilotBase.h"
+#include "BlueprintCopilot.generated.h"
 
 /**
  * Editor object which handles all of the logic of the Plugin.
  */
 
 UCLASS()
-class MYPLUGINEDITOR_API UMyPluginEditor : public UMyPluginEditorBase
+class BLUEPRINTCOPILOT_API UBlueprintCopilot : public UBlueprintCopilotBase
 {
 
 	GENERATED_BODY()
 
 public:
 
-	// UMyPluginEditorBase implementation
+	// UBlueprintCopilotBase implementation
 	void Init() override;
 
 protected:
 
-	// UMyPluginEditorBase implementation
+	// UBlueprintCopilotBase implementation
 	void InitializeTheWidget();
 
 public:

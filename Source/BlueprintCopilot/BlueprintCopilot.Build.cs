@@ -2,14 +2,13 @@
 
 using UnrealBuildTool;
 
-public class MyPluginEditor : ModuleRules
+public class BlueprintCopilot : ModuleRules
 {
-	public MyPluginEditor(ReadOnlyTargetRules Target) : base(Target)
+	public BlueprintCopilot(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PrivateIncludePaths.Add("MyPluginEditor/Private");
-		PrivateIncludePaths.Add("MyPlugin/Private");
+		PrivateIncludePaths.Add("BlueprintCopilot/Private");
 
 		PublicDependencyModuleNames.AddRange(
 			new string[]
@@ -18,22 +17,21 @@ public class MyPluginEditor : ModuleRules
 				"InputCore"
 			}
 		);
-			
-		
+
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"MyPlugin",
-                "Engine",
+				"Engine",
 				"CoreUObject",
-                "Slate",
-                "SlateCore",
-                "UnrealEd",
+				"Slate",
+				"SlateCore",
+				"UnrealEd",
 				"WorkspaceMenuStructure",
 				"DesktopPlatform",
-                "Blutility",
-                "UMG",
-                "UMGEditor",
+				"Blutility",
+				"UMG",
+				"UMGEditor",
 				"EditorStyle",
 				"Projects"
 			}
