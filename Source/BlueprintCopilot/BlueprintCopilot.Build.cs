@@ -1,6 +1,7 @@
 // Copyright (c) 2022 Ren Brauge. All rights reserved.
 
 using UnrealBuildTool;
+using System.IO;
 
 public class BlueprintCopilot : ModuleRules
 {
@@ -37,5 +38,7 @@ public class BlueprintCopilot : ModuleRules
         "BlueprintGraph"
       }
     );
+
+    CMakeTarget.add(Target, this, "LibGuidance", Path.Combine(this.ModuleDirectory, "../Deps/LibBlueprintCopilot"), "", true);
   }
 }

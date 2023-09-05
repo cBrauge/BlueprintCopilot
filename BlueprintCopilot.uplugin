@@ -14,12 +14,18 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": true,
+	"EnabledByDefault": true,
 	"SupportedTargetPlatforms": [
 		"Win64"
 	],
 	"Modules": [
 		{
 			"Name": "BlueprintCopilot",
+			"Type": "Editor",
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "CMakeTarget",
 			"Type": "Editor",
 			"LoadingPhase": "PreDefault"
 		}

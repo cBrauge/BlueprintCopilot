@@ -19,9 +19,15 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 
+#include "LibBlueprintCopilot.h"
+#include "ChatGPT.h"
+#include "LibLLMFactory.h"
+#include "ActionsDeserialization.h"
+
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <variant>
 
 // TODO move those into helper cache class
 // Make functions take an additional parameter for the internal naming of the node in the cache,
@@ -32,7 +38,7 @@ std::unordered_map<BlueprintID, UBlueprint *> blueprint_cache{};
 std::unordered_map<NodeID, UK2Node *> node_cache{};
 
 // TODO also get an already created blueprint
-auto CreateBlueprint(const std::string &name, const BlueprintID& blueprintID)
+auto CreateBlueprint(const std::string &name, const BlueprintID &blueprintID)
 {
     auto targetPackage{CreatePackage(*FString::Printf(TEXT("/Game/BlueprintCopilotGeneratedBlueprints/%s"), *FString(name.c_str())))};
 
@@ -49,7 +55,7 @@ auto CreateBlueprint(const std::string &name, const BlueprintID& blueprintID)
     return blueprint;
 }
 
-bool AddVariable(const BlueprintID& blueprintID, const std::string &name, const FName type, const std::string &value = "")
+bool AddVariable(const BlueprintID &blueprintID, const std::string &name, const FName type, const std::string &value = "")
 {
     auto blueprint{blueprint_cache[blueprintID]};
     FEdGraphPinType PinType;
@@ -65,7 +71,7 @@ bool AddVariable(const BlueprintID& blueprintID, const std::string &name, const 
     }
 }
 
-UEdGraph *GetGraph(const BlueprintID& blueprintID)
+UEdGraph *GetGraph(const BlueprintID &blueprintID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
     if (blueprint->UbergraphPages.Num() == 0)
@@ -76,7 +82,7 @@ UEdGraph *GetGraph(const BlueprintID& blueprintID)
     return blueprint->UbergraphPages[0];
 }
 
-FProperty *GetProperty(const BlueprintID& blueprintID, const std::string &name)
+FProperty *GetProperty(const BlueprintID &blueprintID, const std::string &name)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -94,7 +100,7 @@ FProperty *GetProperty(const BlueprintID& blueprintID, const std::string &name)
     return nullptr;
 }
 
-UK2Node_VariableGet *AddVariableGetNode(const BlueprintID& blueprintID, const std::string &propertyName, const NodeID &nodeID)
+UK2Node_VariableGet *AddVariableGetNode(const BlueprintID &blueprintID, const std::string &propertyName, const NodeID &nodeID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -103,7 +109,7 @@ UK2Node_VariableGet *AddVariableGetNode(const BlueprintID& blueprintID, const st
 
     if (!property)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find one or more Blueprint properties!"));
+        UE_LOG(LogTemp, Error, TEXT("Failed to find Blueprint properties!"));
         return nullptr;
     }
 
@@ -117,7 +123,7 @@ UK2Node_VariableGet *AddVariableGetNode(const BlueprintID& blueprintID, const st
     return node;
 }
 
-UK2Node_CallFunction *AddFunctionNode(const BlueprintID& blueprintID, const std::string &functionName, const NodeID &nodeID)
+UK2Node_CallFunction *AddFunctionNode(const BlueprintID &blueprintID, const std::string &functionName, const NodeID &nodeID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -141,7 +147,7 @@ UK2Node_CallFunction *AddFunctionNode(const BlueprintID& blueprintID, const std:
     return node;
 }
 
-UK2Node_VariableSet *AddVariableSetNode(const BlueprintID& blueprintID, const std::string &propertyName, const NodeID &nodeID)
+UK2Node_VariableSet *AddVariableSetNode(const BlueprintID &blueprintID, const std::string &propertyName, const NodeID &nodeID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
     auto eventGraph{GetGraph(blueprintID)};
@@ -207,7 +213,7 @@ bool PositionNode(const NodeID &nodeID, int x, int y)
     return true;
 }
 
-void UpdateBlueprint(const BlueprintID& blueprintID)
+bool UpdateBlueprint(const BlueprintID &blueprintID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -216,9 +222,11 @@ void UpdateBlueprint(const BlueprintID& blueprintID)
     blueprint->SimpleConstructionScript->Modify();
     blueprint->PostEditChange();
     FKismetEditorUtilities::CompileBlueprint(blueprint, EBlueprintCompileOptions::None, &Results);
+
+    return true;
 }
 
-void CreateBlueprintPermanently(const BlueprintID& blueprintID)
+bool CreateBlueprintPermanently(const BlueprintID &blueprintID)
 {
     UpdateBlueprint(blueprintID);
 
@@ -226,12 +234,14 @@ void CreateBlueprintPermanently(const BlueprintID& blueprintID)
 
     FAssetRegistryModule::AssetCreated(blueprint);
     blueprint->MarkPackageDirty();
+
+    return true;
 }
 
 void Foo()
 {
     // 1. Create a new Blueprint
-    const auto blueprintName{ "TestBLUEPRINT" };
+    const auto blueprintName{"TestBLUEPRINT"};
     const auto blueprintID{"TestBLUEPRINT0"};
     const auto myVarName{"MyVariable"};
     const auto myVarNodeID{"MyVariableNode0"};
@@ -330,6 +340,280 @@ void Foo()
     UE_LOG(LogTemp, Log, TEXT("Blueprint created and modified!"));
 }
 
+bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprint &action)
+{
+    auto NewBlueprint{CreateBlueprint(action.BlueprintName, action.BlueprintID)};
+    if (!NewBlueprint)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create blueprint!"));
+        return false;
+    }
+
+    return true;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::CreateLink &action)
+{
+    const auto success{ConnectPins(action.SourceNodeID, action.SourcePinName, action.DestinationNodeID, action.DestinationPinName)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create link"));
+        return success;
+    }
+
+    return success;
+}
+
+auto TypeToSchemaType(const std::string &name)
+{
+    if (name == "UEdGraphSchema_K2::PC_Int")
+    {
+        return UEdGraphSchema_K2::PC_Int;
+    }
+
+    // TODO support more types
+    return UEdGraphSchema_K2::PC_Int;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariable &action)
+{
+    const auto type{TypeToSchemaType(action.PinCategory)};
+    const auto success{AddVariable(action.BlueprintID, action.VariableName, type, action.DefaultValue)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to add variable"));
+        return success;
+    }
+
+    return success;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableGetNode &action)
+{
+    const auto success{AddVariableGetNode(action.BlueprintID, action.PropertyName, action.NodeID)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to add variable Get node"));
+        return false;
+    }
+
+    return true;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableSetNode &action)
+{
+    const auto success{AddVariableSetNode(action.BlueprintID, action.PropertyName, action.NodeID)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to add variable Set node"));
+        return false;
+    }
+
+    return true;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddFunctionNode &action)
+{
+    const auto success{AddFunctionNode(action.BlueprintID, action.FunctionName, action.NodeID)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to add function node"));
+        return false;
+    }
+
+    return true;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::PositionNode &action)
+{
+    const auto success{PositionNode(action.NodeID, action.x, action.y)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to position node"));
+        return success;
+    }
+
+    return success;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::UpdateBlueprint &action)
+{
+    const auto success{UpdateBlueprint(action.BlueprintID)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to update blueprint"));
+        return success;
+    }
+
+    return success;
+}
+
+bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprintPermanently &action)
+{
+    const auto success{CreateBlueprintPermanently(action.BlueprintID)};
+    if (!success)
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to create blueprint on disk"));
+        return success;
+    }
+
+    return success;
+}
+
+void Foo2()
+{
+    auto libLLM{LibBlueprintCopilot::Guidance::LibLLMFactory::CreateLibLLM(LibBlueprintCopilot::Guidance::LibLLMModel::FakeLLMModel, "")};
+
+    std::string jsonString = R"(
+[
+  {
+    "Type": "CreateBlueprint",
+    "BlueprintName": "TestBLUEPRINT",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "Reasoning": "Creating the blueprint named 'TestBLUEPRINT'."
+  },
+  {
+    "Type": "AddVariable",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "VariableName": "MyVariable",
+    "PinCategory": "UEdGraphSchema_K2::PC_Int",
+    "DefaultValue": "5",
+    "Reasoning": "Adding 'MyVariable' of type int with default value 5."
+  },
+  {
+    "Type": "AddVariable",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "VariableName": "MyOtherVariable",
+    "PinCategory": "UEdGraphSchema_K2::PC_Int",
+    "DefaultValue": "10",
+    "Reasoning": "Adding 'MyOtherVariable' of type int with default value 10."
+  },
+  {
+    "Type": "AddVariable",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "VariableName": "MyResult",
+    "PinCategory": "UEdGraphSchema_K2::PC_Int",
+    "DefaultValue": "",
+    "Reasoning": "Adding 'MyResult' variable to store the result of the addition."
+  },
+ {
+    "Type": "UpdateBlueprint",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "Reasoning": "Compiling and updating the blueprint after changes."
+  },
+  {
+    "Type": "AddVariableGetNode",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "PropertyName": "MyVariable",
+    "NodeID": "ID_GetNode_MyVariable",
+    "Reasoning": "Creating a getter node for 'MyVariable'."
+  },
+  {
+    "Type": "AddVariableGetNode",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "PropertyName": "MyOtherVariable",
+    "NodeID": "ID_GetNode_MyOtherVariable",
+    "Reasoning": "Creating a getter node for 'MyOtherVariable'."
+  },
+  {
+    "Type": "AddFunctionNode",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "FunctionName": "Add_IntInt",
+    "NodeID": "ID_AddFunctionNode",
+    "Reasoning": "Creating a node for addition operation."
+  },
+  {
+    "Type": "CreateLink",
+    "SourceNodeID": "ID_GetNode_MyVariable",
+    "SourcePinName": "MyVariable",
+    "DestinationNodeID": "ID_AddFunctionNode",
+    "DestinationPinName": "A",
+    "Reasoning": "Linking 'MyVariable' to the addition function input A."
+  },
+  {
+    "Type": "CreateLink",
+    "SourceNodeID": "ID_GetNode_MyOtherVariable",
+    "SourcePinName": "MyOtherVariable",
+    "DestinationNodeID": "ID_AddFunctionNode",
+    "DestinationPinName": "B",
+    "Reasoning": "Linking 'MyOtherVariable' to the addition function input B."
+  },
+  {
+    "Type": "AddVariableSetNode",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "PropertyName": "MyResult",
+    "NodeID": "ID_SetNode_MyResult",
+    "Reasoning": "Creating a setter node for 'MyResult'."
+  },
+  {
+    "Type": "CreateLink",
+    "SourceNodeID": "ID_AddFunctionNode",
+    "SourcePinName": "ReturnValue",
+    "DestinationNodeID": "ID_SetNode_MyResult",
+    "DestinationPinName": "MyResult",
+    "Reasoning": "Linking the result of the addition to the 'MyResult' setter."
+  },
+  {
+    "Type": "PositionNode",
+    "NodeID": "ID_GetNode_MyVariable",
+    "x": 100,
+    "y": 100,
+    "Reasoning": "Positioning the getter node for 'MyVariable'."
+  },
+  {
+    "Type": "PositionNode",
+    "NodeID": "ID_GetNode_MyOtherVariable",
+    "x": 100,
+    "y": 200,
+    "Reasoning": "Positioning the getter node for 'MyOtherVariable'."
+  },
+  {
+    "Type": "PositionNode",
+    "NodeID": "ID_AddFunctionNode",
+    "x": 250,
+    "y": 150,
+    "Reasoning": "Positioning the addition function node."
+  },
+  {
+    "Type": "PositionNode",
+    "NodeID": "ID_SetNode_MyResult",
+    "x": 400,
+    "y": 150,
+    "Reasoning": "Positioning the setter node for 'MyResult'."
+  },
+  {
+    "Type": "UpdateBlueprint",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "Reasoning": "Compiling and updating the blueprint after changes."
+  },
+  {
+    "Type": "CreateBlueprintPermanently",
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "Reasoning": "Saving the blueprint on disk to make it permanent."
+  }
+]
+
+    )";
+
+    auto response{libLLM->Request(jsonString)};
+    auto actions{LibBlueprintCopilot::Guidance::ConvertResponseToActions(response)};
+    int i = 0;
+    for (const auto &action : actions)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Starting action: %d"), i++);
+
+        auto success{std::visit([](const auto &a) -> bool
+                                { return PerformAction(a); },
+                                action)};
+        if (!success)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed!"));
+
+            return;
+        }
+    }
+}
+
 void UBlueprintCopilot::Init()
 {
     // Put initialization code here
@@ -348,6 +632,6 @@ void UBlueprintCopilot::OnTestButtonPressed()
 {
     // Button on the widget has been pressed. Increase the counter and inform the widget about it.
     NumberOfTestButtonPressed++;
-    Foo();
+    Foo2();
     EditorWidget->SetNumberOfTestButtonPressed(NumberOfTestButtonPressed);
 }
