@@ -2,12 +2,13 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
 #include "BlueprintCopilotBase.generated.h"
+#include "CoreMinimal.h"
 
 /**
  * Editor object handles all of the basic logic of the Plugin.
- * It's tasks are to create a widget which is put into the dock.
+ * It's tasks are to create a widget which is put
+ * into the dock.
  * Override it to add extra logic the editor should handle.
  */
 DECLARE_LOG_CATEGORY_EXTERN(BlueprintCopilot, Log, All);
@@ -17,70 +18,73 @@ UCLASS()
 class BLUEPRINTCOPILOT_API UBlueprintCopilotBase : public UObject
 {
 
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-
-	/**
+    /**
 	 * Initializes the editor object. Runs right after
 	 * it's creation.
 	 */
-	virtual void Init();
+    virtual void Init();
 
-	/**
+    /**
 	 * Sets up the EditorTab. Used by Editor Module right after a Tab is created.
 	 */
-	void SetEditorTab(const TSharedRef<class SDockTab>& NewEditorTab);
+    void SetEditorTab(const TSharedRef<class SDockTab>& NewEditorTab);
 
-	/**
+    /**
 	 * Returns true if the Editor UI widget can be created.
 	 */
-	bool CanCreateEditorUI();
+    bool CanCreateEditorUI();
 
-	/**
+    /**
 	 * Creates Editor UI widget and returns a reference to it.
-	 * It is called from the Editor Module in a moment of Tab Creation.
+	 * It is called from the Editor Module
+     * in a moment of Tab Creation.
 	 */
-	TSharedRef<class SWidget> CreateEditorUI();
+    TSharedRef<class SWidget> CreateEditorUI();
 
 protected:
-
-	/**
+    /**
 	 * Initialize EditorWidget after it's creation.
-	 * Binds all required delegates and sets up default values to the Widget.
+	 * Binds all required delegates and sets up
+     * default values to the Widget.
 	 */
-	virtual void InitializeTheWidget();
+    virtual void InitializeTheWidget();
 
-	// Handler of the created Editor Utility Widget. 
-	// Is created in CreateEditorWidget().
-	UPROPERTY()
-	class UBlueprintCopilotWidget* EditorWidget;
+    // Handler of the created Editor Utility Widget.
+    // Is created in CreateEditorWidget().
+    UPROPERTY()
+    class UBlueprintCopilotWidget* EditorWidget;
 
 private:
-
-	/**
+    /**
 	 * Returns an Utility Widget Blueprint from Content directory which will
-	 * be used to create an Editor options window. The widget must be located
+	 * be used to create an
+     * Editor options window. The widget must be located
 	 * in the given in this function location.
 	 */
-	class UEditorUtilityWidgetBlueprint* GetUtilityWidgetBlueprint();
+    class UEditorUtilityWidgetBlueprint* GetUtilityWidgetBlueprint();
 
-	/**
+    /**
 	 * Creates the Editor Utility Widget from the Utility Widget Blueprint.
-	 * It can be called from CreateDitorUI() when it is opened by user,
-	 * or it can be called from ChangeTabWorld() in a situation when a map is loaded 
+	 * It can be called from
+     * CreateDitorUI() when it is opened by user,
+	 * or it can be called from ChangeTabWorld() in a situation when
+     * a map is loaded 
 	 * or created and an Editor Tab is valid (moving widget between maps).
 	 */
-	TSharedRef<class SWidget> CreateEditorWidget();
+    TSharedRef<class SWidget> CreateEditorWidget();
 
-	/**
+    /**
 	 * Called when OnMapChanged event occurs. The EditorTab must be properly
-	 * handled when the world is torn down or when a map is created or loaded.
+	 * handled when the
+     * world is torn down or when a map is created or loaded.
 	 */
-	void ChangeTabWorld(UWorld* World, EMapChangeType MapChangeType);
+    void ChangeTabWorld(UWorld* World, EMapChangeType MapChangeType);
 
 
-	// A pointer to the EditorTab in which the editor widget should be docked. 
-	// It is set by an Editor Module by SetEditorTab() right after the dock is created.
-	TWeakPtr<class SDockTab> EditorTab;
+    // A pointer to the EditorTab in which the editor widget should be docked.
+    // It is set by an Editor Module by SetEditorTab() right after the dock is created.
+    TWeakPtr<class SDockTab> EditorTab;
 };

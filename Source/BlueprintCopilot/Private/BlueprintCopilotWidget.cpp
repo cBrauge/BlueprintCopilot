@@ -4,5 +4,5 @@
 
 void UBlueprintCopilotWidget::TestButtonPressed()
 {
-	OnTestButtonPressedDelegate.ExecuteIfBound();
+    OnTestButtonPressedDelegate.ExecuteIfBound();
 }

@@ -8,15 +8,15 @@
 /**
  * Class handling UICommands of the editor.
  * Currently only "Open BlueprintCopilot" commands is required.
- * It is done via commands, because we want to have a keyboard shortcut for it.
+ * It is
+ * done via commands, because we want to have a keyboard shortcut for it.
  */
 
 class BLUEPRINTCOPILOT_API FBlueprintCopilotCommands : public TCommands<FBlueprintCopilotCommands>
 {
 
 public:
-
-	FBlueprintCopilotCommands();
-	void RegisterCommands() override;
-	TSharedPtr<FUICommandInfo> OpenBlueprintCopilotWindow;
+    FBlueprintCopilotCommands();
+    void RegisterCommands() override;
+    TSharedPtr<FUICommandInfo> OpenBlueprintCopilotWindow;
 };

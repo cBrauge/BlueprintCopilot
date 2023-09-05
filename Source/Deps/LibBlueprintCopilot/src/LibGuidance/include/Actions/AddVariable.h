@@ -1,19 +1,21 @@
 #pragma once
 
-#include <string>
-#include <nlohmann/json.hpp>
-
 #include "Actions/BaseAction.h"
 
-namespace LibBlueprintCopilot::Guidance {
-	class AddVariable : public BaseAction {
-	public:
-		std::string BlueprintID;
+#include <nlohmann/json.hpp>
+#include <string>
 
-		std::string VariableName;
-		std::string PinCategory;
-		std::string DefaultValue = "";
-	};
+namespace LibBlueprintCopilot::Guidance
+{
+    class AddVariable : public BaseAction
+    {
+    public:
+        std::string BlueprintID;
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddVariable, BlueprintID, VariableName, PinCategory, DefaultValue);
-}
+        std::string VariableName;
+        std::string PinCategory;
+        std::string DefaultValue = "";
+    };
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AddVariable, BlueprintID, VariableName, PinCategory, DefaultValue);
+} // namespace LibBlueprintCopilot::Guidance

@@ -2,8 +2,8 @@
 
 namespace LibBlueprintCopilot::Guidance
 {
-	class Guidance
-	{
-		Guidance();
-	};
-}
+    class Guidance
+    {
+        Guidance();
+    };
+} // namespace LibBlueprintCopilot::Guidance

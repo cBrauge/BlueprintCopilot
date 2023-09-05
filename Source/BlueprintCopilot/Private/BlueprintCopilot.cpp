@@ -1,28 +1,26 @@
 // Copyright (c) 2022 Ren Brauge. All rights reserved.
 
 #include "BlueprintCopilot.h"
+
+#include "ActionsDeserialization.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "BlueprintCopilotWidget.h"
-
-#include "EditorUtilityWidget.h"
-#include "EditorUtilitySubsystem.h"
-#include "EditorUtilityWidgetBlueprint.h"
-#include "LevelEditor.h"
-
+#include "ChatGPT.h"
 #include "Editor.h"
-#include "Kismet2/BlueprintEditorUtils.h"
-#include "Kismet2/KismetEditorUtilities.h"
+#include "EditorUtilitySubsystem.h"
+#include "EditorUtilityWidget.h"
+#include "EditorUtilityWidgetBlueprint.h"
+#include "Engine/SimpleConstructionScript.h"
+#include "K2Node_CallFunction.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
-#include "K2Node_CallFunction.h"
-#include "KismetCompiler.h"
-#include "Engine/SimpleConstructionScript.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "AssetRegistry/AssetRegistryModule.h"
-
+#include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet2/KismetEditorUtilities.h"
+#include "KismetCompiler.h"
+#include "LevelEditor.h"
 #include "LibBlueprintCopilot.h"
-#include "ChatGPT.h"
 #include "LibLLMFactory.h"
-#include "ActionsDeserialization.h"
 
 #include <optional>
 #include <string>
@@ -33,29 +31,26 @@
 // Make functions take an additional parameter for the internal naming of the node in the cache,
 // not reusing the same nodes as it can clash in the future if we create 2 nodes for same property
 using BlueprintID = std::string;
-using NodeID = std::string;
-std::unordered_map<BlueprintID, UBlueprint *> blueprint_cache{};
-std::unordered_map<NodeID, UK2Node *> node_cache{};
+using NodeID      = std::string;
+std::unordered_map<BlueprintID, UBlueprint*> blueprint_cache{};
+std::unordered_map<NodeID, UK2Node*> node_cache{};
 
 // TODO also get an already created blueprint
-auto CreateBlueprint(const std::string &name, const BlueprintID &blueprintID)
+auto CreateBlueprint(const std::string& name, const BlueprintID& blueprintID)
 {
-    auto targetPackage{CreatePackage(*FString::Printf(TEXT("/Game/BlueprintCopilotGeneratedBlueprints/%s"), *FString(name.c_str())))};
+    auto targetPackage{
+        CreatePackage(*FString::Printf(TEXT("/Game/BlueprintCopilotGeneratedBlueprints/%s"), *FString(name.c_str())))};
 
-    auto blueprint{FKismetEditorUtilities::CreateBlueprint(
-        AActor::StaticClass(),
-        targetPackage,
-        *FString(name.c_str()),
-        BPTYPE_Normal,
-        UBlueprint::StaticClass(),
-        UBlueprintGeneratedClass::StaticClass())};
+    auto blueprint{FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), targetPackage, *FString(name.c_str()),
+        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass())};
 
     blueprint_cache[blueprintID] = blueprint;
 
     return blueprint;
 }
 
-bool AddVariable(const BlueprintID &blueprintID, const std::string &name, const FName type, const std::string &value = "")
+bool AddVariable(
+    const BlueprintID& blueprintID, const std::string& name, const FName type, const std::string& value = "")
 {
     auto blueprint{blueprint_cache[blueprintID]};
     FEdGraphPinType PinType;
@@ -71,7 +66,7 @@ bool AddVariable(const BlueprintID &blueprintID, const std::string &name, const 
     }
 }
 
-UEdGraph *GetGraph(const BlueprintID &blueprintID)
+UEdGraph* GetGraph(const BlueprintID& blueprintID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
     if (blueprint->UbergraphPages.Num() == 0)
@@ -82,7 +77,7 @@ UEdGraph *GetGraph(const BlueprintID &blueprintID)
     return blueprint->UbergraphPages[0];
 }
 
-FProperty *GetProperty(const BlueprintID &blueprintID, const std::string &name)
+FProperty* GetProperty(const BlueprintID& blueprintID, const std::string& name)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -100,7 +95,8 @@ FProperty *GetProperty(const BlueprintID &blueprintID, const std::string &name)
     return nullptr;
 }
 
-UK2Node_VariableGet *AddVariableGetNode(const BlueprintID &blueprintID, const std::string &propertyName, const NodeID &nodeID)
+UK2Node_VariableGet* AddVariableGetNode(
+    const BlueprintID& blueprintID, const std::string& propertyName, const NodeID& nodeID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -123,7 +119,8 @@ UK2Node_VariableGet *AddVariableGetNode(const BlueprintID &blueprintID, const st
     return node;
 }
 
-UK2Node_CallFunction *AddFunctionNode(const BlueprintID &blueprintID, const std::string &functionName, const NodeID &nodeID)
+UK2Node_CallFunction* AddFunctionNode(
+    const BlueprintID& blueprintID, const std::string& functionName, const NodeID& nodeID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -147,7 +144,8 @@ UK2Node_CallFunction *AddFunctionNode(const BlueprintID &blueprintID, const std:
     return node;
 }
 
-UK2Node_VariableSet *AddVariableSetNode(const BlueprintID &blueprintID, const std::string &propertyName, const NodeID &nodeID)
+UK2Node_VariableSet* AddVariableSetNode(
+    const BlueprintID& blueprintID, const std::string& propertyName, const NodeID& nodeID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
     auto eventGraph{GetGraph(blueprintID)};
@@ -170,7 +168,7 @@ UK2Node_VariableSet *AddVariableSetNode(const BlueprintID &blueprintID, const st
 }
 
 // Use this if you're not sure of the pins of a node
-void LogPins(UK2Node *node)
+void LogPins(UK2Node* node)
 {
     for (auto pin : node->Pins)
     {
@@ -178,7 +176,8 @@ void LogPins(UK2Node *node)
     }
 }
 
-auto ConnectPins(const NodeID &outputNodeID, const std::string &outputPinName, const NodeID &inputNodeID, const std::string &inputPinName)
+auto ConnectPins(const NodeID& outputNodeID, const std::string& outputPinName, const NodeID& inputNodeID,
+    const std::string& inputPinName)
 {
     auto outputNode{node_cache[outputNodeID]};
     auto inputNode{node_cache[inputNodeID]};
@@ -204,7 +203,7 @@ auto ConnectPins(const NodeID &outputNodeID, const std::string &outputPinName, c
     return true;
 }
 
-bool PositionNode(const NodeID &nodeID, int x, int y)
+bool PositionNode(const NodeID& nodeID, int x, int y)
 {
     auto node{node_cache[nodeID]};
 
@@ -213,7 +212,7 @@ bool PositionNode(const NodeID &nodeID, int x, int y)
     return true;
 }
 
-bool UpdateBlueprint(const BlueprintID &blueprintID)
+bool UpdateBlueprint(const BlueprintID& blueprintID)
 {
     auto blueprint{blueprint_cache[blueprintID]};
 
@@ -226,7 +225,7 @@ bool UpdateBlueprint(const BlueprintID &blueprintID)
     return true;
 }
 
-bool CreateBlueprintPermanently(const BlueprintID &blueprintID)
+bool CreateBlueprintPermanently(const BlueprintID& blueprintID)
 {
     UpdateBlueprint(blueprintID);
 
@@ -340,7 +339,7 @@ void Foo()
     UE_LOG(LogTemp, Log, TEXT("Blueprint created and modified!"));
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprint &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprint& action)
 {
     auto NewBlueprint{CreateBlueprint(action.BlueprintName, action.BlueprintID)};
     if (!NewBlueprint)
@@ -352,9 +351,10 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprint &action)
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::CreateLink &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::CreateLink& action)
 {
-    const auto success{ConnectPins(action.SourceNodeID, action.SourcePinName, action.DestinationNodeID, action.DestinationPinName)};
+    const auto success{
+        ConnectPins(action.SourceNodeID, action.SourcePinName, action.DestinationNodeID, action.DestinationPinName)};
     if (!success)
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to create link"));
@@ -364,7 +364,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::CreateLink &action)
     return success;
 }
 
-auto TypeToSchemaType(const std::string &name)
+auto TypeToSchemaType(const std::string& name)
 {
     if (name == "UEdGraphSchema_K2::PC_Int")
     {
@@ -375,7 +375,7 @@ auto TypeToSchemaType(const std::string &name)
     return UEdGraphSchema_K2::PC_Int;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariable &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariable& action)
 {
     const auto type{TypeToSchemaType(action.PinCategory)};
     const auto success{AddVariable(action.BlueprintID, action.VariableName, type, action.DefaultValue)};
@@ -388,7 +388,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariable &action)
     return success;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableGetNode &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableGetNode& action)
 {
     const auto success{AddVariableGetNode(action.BlueprintID, action.PropertyName, action.NodeID)};
     if (!success)
@@ -400,7 +400,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableGetNode &acti
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableSetNode &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableSetNode& action)
 {
     const auto success{AddVariableSetNode(action.BlueprintID, action.PropertyName, action.NodeID)};
     if (!success)
@@ -412,7 +412,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableSetNode &acti
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddFunctionNode &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::AddFunctionNode& action)
 {
     const auto success{AddFunctionNode(action.BlueprintID, action.FunctionName, action.NodeID)};
     if (!success)
@@ -424,7 +424,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::AddFunctionNode &action)
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::PositionNode &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::PositionNode& action)
 {
     const auto success{PositionNode(action.NodeID, action.x, action.y)};
     if (!success)
@@ -436,7 +436,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::PositionNode &action)
     return success;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::UpdateBlueprint &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::UpdateBlueprint& action)
 {
     const auto success{UpdateBlueprint(action.BlueprintID)};
     if (!success)
@@ -448,7 +448,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::UpdateBlueprint &action)
     return success;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprintPermanently &action)
+bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprintPermanently& action)
 {
     const auto success{CreateBlueprintPermanently(action.BlueprintID)};
     if (!success)
@@ -462,7 +462,8 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprintPermanent
 
 void Foo2()
 {
-    auto libLLM{LibBlueprintCopilot::Guidance::LibLLMFactory::CreateLibLLM(LibBlueprintCopilot::Guidance::LibLLMModel::FakeLLMModel, "")};
+    auto libLLM{LibBlueprintCopilot::Guidance::LibLLMFactory::CreateLibLLM(
+        LibBlueprintCopilot::Guidance::LibLLMModel::FakeLLMModel, "")};
 
     std::string jsonString = R"(
 [
@@ -598,13 +599,11 @@ void Foo2()
     auto response{libLLM->Request(jsonString)};
     auto actions{LibBlueprintCopilot::Guidance::ConvertResponseToActions(response)};
     int i = 0;
-    for (const auto &action : actions)
+    for (const auto& action : actions)
     {
         UE_LOG(LogTemp, Warning, TEXT("Starting action: %d"), i++);
 
-        auto success{std::visit([](const auto &a) -> bool
-                                { return PerformAction(a); },
-                                action)};
+        auto success{std::visit([](const auto& a) -> bool { return PerformAction(a); }, action)};
         if (!success)
         {
             UE_LOG(LogTemp, Error, TEXT("Failed!"));

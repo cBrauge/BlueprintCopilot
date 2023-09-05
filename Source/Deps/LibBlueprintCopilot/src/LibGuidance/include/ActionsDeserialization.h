@@ -1,8 +1,9 @@
-#include <vector>
-#include <string>
-
 #include "Actions/Action.h"
 
-namespace LibBlueprintCopilot::Guidance {
-	std::vector<Action> ConvertResponseToActions(std::string_view response);
+#include <string>
+#include <vector>
+
+namespace LibBlueprintCopilot::Guidance
+{
+    std::vector<Action> ConvertResponseToActions(std::string_view response);
 }

@@ -2,8 +2,10 @@
 
 #include <string>
 
-namespace LibBlueprintCopilot::Guidance {
-    class ILibLLM {
+namespace LibBlueprintCopilot::Guidance
+{
+    class ILibLLM
+    {
     public:
         virtual ~ILibLLM() = default;
 
@@ -12,4 +14,4 @@ namespace LibBlueprintCopilot::Guidance {
         /// </summary>
         virtual std::string Request(std::string_view request) = 0;
     };
-}
+} // namespace LibBlueprintCopilot::Guidance

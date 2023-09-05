@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "BlueprintCopilotBase.h"
 #include "BlueprintCopilot.generated.h"
+#include "BlueprintCopilotBase.h"
 
 /**
  * Editor object which handles all of the logic of the Plugin.
@@ -13,25 +13,22 @@ UCLASS()
 class BLUEPRINTCOPILOT_API UBlueprintCopilot : public UBlueprintCopilotBase
 {
 
-	GENERATED_BODY()
+    GENERATED_BODY()
 
 public:
-
-	// UBlueprintCopilotBase implementation
-	void Init() override;
+    // UBlueprintCopilotBase implementation
+    void Init() override;
 
 protected:
-
-	// UBlueprintCopilotBase implementation
-	void InitializeTheWidget();
+    // UBlueprintCopilotBase implementation
+    void InitializeTheWidget();
 
 public:
-
-	/**
+    /**
 	 * Called when the test button has been pressed on the widget.
 	 */
-	void OnTestButtonPressed();
+    void OnTestButtonPressed();
 
-	// Test variable
-	int32 NumberOfTestButtonPressed = 0;
+    // Test variable
+    int32 NumberOfTestButtonPressed = 0;
 };

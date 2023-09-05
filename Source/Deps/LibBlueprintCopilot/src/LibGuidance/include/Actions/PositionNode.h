@@ -1,18 +1,20 @@
 #pragma once
 
-#include <string>
-#include <nlohmann/json.hpp>
-
 #include "Actions/BaseAction.h"
 
-namespace LibBlueprintCopilot::Guidance {
-	class PositionNode : public BaseAction {
-	public:
-		std::string NodeID;
+#include <nlohmann/json.hpp>
+#include <string>
 
-		int x;
-		int y;
-	};
+namespace LibBlueprintCopilot::Guidance
+{
+    class PositionNode : public BaseAction
+    {
+    public:
+        std::string NodeID;
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PositionNode, NodeID, x, y);
-}
+        int x;
+        int y;
+    };
+
+    NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PositionNode, NodeID, x, y);
+} // namespace LibBlueprintCopilot::Guidance

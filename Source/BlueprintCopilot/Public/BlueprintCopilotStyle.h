@@ -13,34 +13,32 @@
 class BLUEPRINTCOPILOT_API FBlueprintCopilotStyle
 {
 public:
-
-	/**
+    /**
 	 * Initialize the style container.
 	 */
-	static void Initialize();
+    static void Initialize();
 
-	/**
+    /**
 	 * Shutdown/cleanup style container.
 	 */
-	static void Shutdown();
-	
-	/** 
+    static void Shutdown();
+
+    /** 
 	 * Reloads textures used by slate renderer.
 	 */
-	static void ReloadTextures();
+    static void ReloadTextures();
 
-	/**
+    /**
 	 * Returns the BlueprintCopilot style set name. 
 	 */
-	static FName GetStyleSetName();
+    static FName GetStyleSetName();
 
 private:
-
-	/**
+    /**
 	 * Creates an instance of the style set.
 	 */
-	static TSharedRef< class FSlateStyleSet > Create();
+    static TSharedRef<class FSlateStyleSet> Create();
 
-	// The static instance of style set.
-	static TSharedPtr< class FSlateStyleSet > StyleInstance;
+    // The static instance of style set.
+    static TSharedPtr<class FSlateStyleSet> StyleInstance;
 };
