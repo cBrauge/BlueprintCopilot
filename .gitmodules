@@ -1,6 +1,6 @@
 [submodule "liboai"]
-	path = Source\Deps\LibBlueprintCopilot\liboai
+	path = Source/Deps/LibBlueprintCopilot/liboai
 	url = https://github.com/D7EAD/liboai.git
 [submodule "json"]
-	path = Source\Deps\LibBlueprintCopilot\json
+	path = Source/Deps/LibBlueprintCopilot/json
 	url = https://github.com/nlohmann/json.git

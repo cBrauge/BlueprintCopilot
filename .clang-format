@@ -1,0 +1,25 @@
+# https://releases.llvm.org/11.0.0/tools/clang/docs/ClangFormatStyleOptions.html
+
+---
+BasedOnStyle:  LLVM
+AccessModifierOffset: -4
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveMacros: true
+AlignConsecutiveAssignments: true
+AlignEscapedNewlines: Left
+AlignOperands: AlignAfterOperator
+AlignTrailingComments: false
+AllowShortFunctionsOnASingleLine: Empty
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBinaryOperators: NonAssignment
+ColumnLimit:     120
+DeriveLineEnding: false
+IncludeBlocks:   Regroup
+IndentCaseBlocks: true
+IndentWidth:     4
+IndentWrappedFunctionNames: true
+MaxEmptyLinesToKeep: 2
+NamespaceIndentation: All
+PointerAlignment: Left
+SpaceAfterCStyleCast: true
+UseCRLF:         true
