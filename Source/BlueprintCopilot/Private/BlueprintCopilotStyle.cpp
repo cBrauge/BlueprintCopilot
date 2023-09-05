@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Damian Nowakowski. All rights reserved.
+// Copyright (c) 2022 Ren Brauge. All rights reserved.
 
 #include "BlueprintCopilotStyle.h"
 #include "Framework/Application/SlateApplication.h"

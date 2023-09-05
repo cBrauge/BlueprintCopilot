@@ -2,13 +2,13 @@
 
 using UnrealBuildTool;
 
-public class BlueprintCopilot : ModuleRules
+public class LibLLM : ModuleRules
 {
-  public BlueprintCopilot(ReadOnlyTargetRules Target) : base(Target)
+  public LibLLM(ReadOnlyTargetRules Target) : base(Target)
   {
     PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 
-    PrivateIncludePaths.Add("BlueprintCopilot/Private");
+    PrivateIncludePaths.Add("LibLLM/Private");
 
     PublicDependencyModuleNames.AddRange(
       new string[]
@@ -33,8 +33,7 @@ public class BlueprintCopilot : ModuleRules
         "UMG",
         "UMGEditor",
         "EditorStyle",
-        "Projects",
-        "BlueprintGraph"
+        "Projects"
       }
     );
   }
