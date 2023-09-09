@@ -139,7 +139,7 @@ bool FBlueprintCopilotModule::CanSpawnEditor()
     // {
     // 	return true;
     // }
-    UE_LOG(BlueprintCopilot2, Warning, TEXT("Call to Cantttttttttt Spawn Editor"));
+    UE_LOG(BlueprintCopilot2, Warning, TEXT("Call to Can't Spawn Editor"));
     return false;
 }
 

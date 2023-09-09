@@ -10,8 +10,11 @@ namespace LibBlueprintCopilot::Guidance
         virtual ~ILibLLM() = default;
 
         /// <summary>
-        /// Sends a request to the llm and responds with the response from the llm
+        /// Sends a request to the llm, responds synchronously (can take some time)
         /// </summary>
-        virtual std::string Request(std::string_view request) = 0;
+        /// <param name="request">The input text from the user</param>
+        /// <param name="model">Which model to use: gpt-4, gpt3.5-turbo</param>
+        /// <returns>Instructions to execute</returns>
+        virtual std::string Request(std::string_view request, std::string_view model) = 0;
     };
 } // namespace LibBlueprintCopilot::Guidance

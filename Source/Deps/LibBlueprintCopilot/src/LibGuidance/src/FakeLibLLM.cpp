@@ -2,7 +2,7 @@
 
 namespace LibBlueprintCopilot::Guidance
 {
-    std::string FakeLibLLM::Request(std::string_view request)
+    std::string FakeLibLLM::Request(std::string_view request, std::string_view model)
     {
         return std::string{request};
     }

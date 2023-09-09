@@ -29,5 +29,13 @@
 			"Type": "Editor",
 			"LoadingPhase": "PreDefault"
 		}
-	]
+	],
+
+	"PostBuildSteps":
+		{
+			"Win64": [
+				"copy \"$(ProjectDir)\\Intermediate\\CMakeTarget\\libcurl\\build\\_deps\\curl-build\\lib\\Release\\libcurl.dll\" \"$(ProjectDir)\\Binaries\\Win64\\\"",
+				"echo Copied libcurl.dll successfully!"
+			]
+		}
 }

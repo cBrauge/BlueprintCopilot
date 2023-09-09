@@ -40,5 +40,8 @@ public class BlueprintCopilot : ModuleRules
     );
 
     CMakeTarget.add(Target, this, "LibGuidance", Path.Combine(this.ModuleDirectory, "../Deps/LibBlueprintCopilot"), "", true);
+    CMakeTarget.add(Target, this, "libcurl", Path.Combine(this.ModuleDirectory, "../Deps/LibBlueprintCopilot"), "", true);
+    // CMakeTarget.add(Target, this, "nlohmann_json", Path.Combine(this.ModuleDirectory, "../Deps/LibBlueprintCopilot"), "", true);
+    CMakeTarget.add(Target, this, "oai", Path.Combine(this.ModuleDirectory, "../Deps/LibBlueprintCopilot"), "", true);
   }
 }

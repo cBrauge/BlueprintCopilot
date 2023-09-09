@@ -2,8 +2,8 @@
 
 #pragma once
 
-#include "BlueprintCopilot.generated.h"
 #include "BlueprintCopilotBase.h"
+#include "BlueprintCopilot.generated.h"
 
 /**
  * Editor object which handles all of the logic of the Plugin.

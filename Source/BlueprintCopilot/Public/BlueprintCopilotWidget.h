@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "BlueprintCopilotWidget.generated.h"
 #include "CoreMinimal.h"
 #include "EditorUtilityWidget.h"
+#include "BlueprintCopilotWidget.generated.h"
 
 /**
  * Widget code used to communicate between code and BP widget.

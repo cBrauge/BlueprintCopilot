@@ -4,6 +4,7 @@
 
 #include <nlohmann/json.hpp>
 #include <string>
+#include <sstream>
 
 namespace LibBlueprintCopilot::Guidance
 {
@@ -18,4 +19,13 @@ namespace LibBlueprintCopilot::Guidance
     };
 
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CreateLink, SourceNodeID, SourcePinName, DestinationNodeID, DestinationPinName);
+
+    inline std::string PrettyPrint(const CreateLink& createLink)
+    {
+        std::ostringstream ss{};
+        ss << "Link from " << createLink.SourceNodeID << "." << createLink.SourcePinName
+           << " to " << createLink.DestinationNodeID << "." << createLink.DestinationPinName;
+
+        return ss.str();
+    }
 } // namespace LibBlueprintCopilot::Guidance

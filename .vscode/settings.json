@@ -84,6 +84,7 @@
     "sstream": "cpp",
     "unordered_set": "cpp",
     "valarray": "cpp",
-    "xtree": "cpp"
+    "xtree": "cpp",
+    "codecvt": "cpp"
   }
 }

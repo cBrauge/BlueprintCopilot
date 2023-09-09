@@ -2,9 +2,12 @@ cmake_minimum_required(VERSION 3.10)
 
 project(TestApplication)
 
-# Create the TestApplication executable
 add_executable(TestApplication
     main.cpp
+)
+
+target_include_directories(TestApplication PRIVATE 
+        ${oai_SOURCE_DIR}/src/include
 )
 
 target_link_libraries(TestApplication

@@ -55,7 +55,7 @@ bool UBlueprintCopilotBase::CanCreateEditorUI()
     }
     else
     {
-        UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Canttttttt Create Editor UI"));
+        UE_LOG(BlueprintCopilot, Warning, TEXT("Call to Can't Create Editor UI"));
     }
 
     return true;
