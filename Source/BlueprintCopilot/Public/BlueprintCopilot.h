@@ -27,7 +27,7 @@ public:
     /**
 	 * Called when the test button has been pressed on the widget.
 	 */
-    void OnTestButtonPressed();
+    void OnTestButtonPressed(FString APIModel, FString GPTModel, FString UserInput);
 
     // Test variable
     int32 NumberOfTestButtonPressed = 0;

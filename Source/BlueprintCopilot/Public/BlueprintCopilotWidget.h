@@ -15,7 +15,9 @@
  * They will be broadcasted to inform
  * the plugin code about changes in UI.
  */
-DECLARE_DELEGATE(FOnTestButton);
+// DECLARE_DELEGATE(FOnTestButton);
+// DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnTestButton, FString, APIModel, FString, GPTModel, FString, UserInput);
+DECLARE_DELEGATE_ThreeParams(FOnTestButton, FString, FString, FString);
 
 UCLASS()
 class BLUEPRINTCOPILOT_API UBlueprintCopilotWidget : public UEditorUtilityWidget
@@ -24,20 +26,28 @@ class BLUEPRINTCOPILOT_API UBlueprintCopilotWidget : public UEditorUtilityWidget
 
 public:
     /**
-	 * Set "Global Namespace" option to the Widget.
-	 */
+     * Set "Global Namespace" option to the Widget.
+     */
     UFUNCTION(BlueprintImplementableEvent)
     void SetNumberOfTestButtonPressed(int32 NewNumber);
 
     /**
-	 * "Global Namespace" option has been changed on the Widget.
-	 */
+     * "Global Namespace" option has been changed on the Widget.
+     */
     UFUNCTION(BlueprintCallable, category = "Blueprint")
-    void TestButtonPressed();
+    void TestButtonPressed(FString APIModel, FString GPTModel, FString UserInput);
 
+    // UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+    // class UComboBoxString* GPTModelChoice;
+
+    // UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+    // class UComboBoxString* APIModelChoice;
+
+    // UPROPERTY(BlueprintReadWrite, meta = (BindWidget))
+    // class UMultiLineEditableText* UserInput;
 
     /**
-	 * Callbacks to be binded to the BlueprintCopilot methods.
-	 */
+     * Callbacks to be binded to the BlueprintCopilot methods.
+     */
     FOnTestButton OnTestButtonPressedDelegate;
 };

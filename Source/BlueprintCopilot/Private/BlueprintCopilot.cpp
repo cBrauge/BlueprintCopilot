@@ -37,7 +37,7 @@ std::string APIKey{""};
 /// @param model Model to use
 /// @param api_key API Key to the llm service
 /// @param user_input What the user wants to do, if using the fake model, simply put the json array of actions
-/// @param gpt_model Kind of GPT model to use: 'gpt-4', 'gpt3.5-turbo'...
+/// @param gpt_model Kind of GPT model to use: 'gpt-4', 'gpt-3.5-turbo'...
 void Execute(LibLLMModel model, std::string_view api_key, std::string user_input, std::string_view gpt_model)
 {
     const auto libLLM{LibLLMFactory::CreateLibLLM(model, api_key)};
@@ -78,9 +78,17 @@ void UBlueprintCopilot::InitializeTheWidget()
     EditorWidget->OnTestButtonPressedDelegate.BindUObject(this, &UBlueprintCopilot::OnTestButtonPressed);
 }
 
-void UBlueprintCopilot::OnTestButtonPressed()
+void UBlueprintCopilot::OnTestButtonPressed(FString APIModel, FString GPTModel, FString UserInput)
 {
+    UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Selected API Model: %s"), *APIModel);
+    UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Selected GPT Model: %s"), *GPTModel);
+    UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: User input: %s"), *UserInput);
+
+    const auto model{APIModel == "Fake" ? LibLLMModel::FakeLLMModel : LibLLMModel::OpenAILLMModel};
+    const auto convertedGPTModel{std::string(TCHAR_TO_UTF8(*GPTModel))};
+    // const auto convertedAPIKey{std::string(TCHAR_TO_UTF8(*APIKey))};
+    const auto convertedUserInput{std::string(TCHAR_TO_UTF8(*UserInput))};
     NumberOfTestButtonPressed++;
-    Execute(Model, APIKey, ListOfInstructions, "gpt-4");
+    Execute(model, APIKey, convertedUserInput, convertedGPTModel);
     EditorWidget->SetNumberOfTestButtonPressed(NumberOfTestButtonPressed);
 }

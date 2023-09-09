@@ -2,7 +2,9 @@
 
 #include "BlueprintCopilotWidget.h"
 
-void UBlueprintCopilotWidget::TestButtonPressed()
+#include "Components/ComboBoxString.h"
+
+void UBlueprintCopilotWidget::TestButtonPressed(FString APIModel, FString GPTModel, FString UserInput)
 {
-    OnTestButtonPressedDelegate.ExecuteIfBound();
+    OnTestButtonPressedDelegate.ExecuteIfBound(APIModel, GPTModel, UserInput);
 }

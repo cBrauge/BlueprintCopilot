@@ -143,21 +143,29 @@ UK2Node_CallFunction* AddFunctionNode(
     auto eventGraph{GetGraph(blueprintID)};
     auto functionFString{FString(functionName.c_str())};
     // TODO check outside of math class and have to specify to openai
-    auto function{UKismetMathLibrary::StaticClass()->FindFunctionByName(*functionFString)};
-    if (!function)
+    const auto kismetMathLibraryNamespace{std::string{"UKismetMathLibrary::"}};
+    if (functionName._Starts_with(kismetMathLibraryNamespace))
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find function %s"), *functionFString);
-        return nullptr;
+        auto realFunctionName{FString(functionName.substr(kismetMathLibraryNamespace.size()).c_str())};
+        auto function{UKismetMathLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
+        if (!function)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to find function %s"), *functionFString);
+            return nullptr;
+        }
+
+        auto node{NewObject<UK2Node_CallFunction>(eventGraph)};
+        node->SetFromFunction(function);
+        node->AllocateDefaultPins();
+        eventGraph->AddNode(node);
+
+        objectCache.UpsertNode(nodeID, node);
+
+        return node;
     }
 
-    auto node{NewObject<UK2Node_CallFunction>(eventGraph)};
-    node->SetFromFunction(function);
-    node->AllocateDefaultPins();
-    eventGraph->AddNode(node);
-
-    objectCache.UpsertNode(nodeID, node);
-
-    return node;
+    UE_LOG(LogTemp, Error, TEXT("Function instantiation not supported %s"), *functionFString);
+    return nullptr;
 }
 
 UK2Node_VariableSet* AddVariableSetNode(
