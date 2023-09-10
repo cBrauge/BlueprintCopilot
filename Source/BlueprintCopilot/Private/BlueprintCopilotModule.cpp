@@ -4,8 +4,10 @@
 
 #include "BlueprintCopilot.h"
 #include "BlueprintCopilotCommands.h"
+#include "BlueprintCopilotSettings.h"
 #include "BlueprintCopilotStyle.h"
 #include "Framework/Docking/TabManager.h"
+#include "ISettingsModule.h"
 #include "Interfaces/IMainFrameModule.h"
 #include "LevelEditor.h"
 #include "PropertyEditorModule.h"
@@ -13,6 +15,8 @@
 
 IMPLEMENT_MODULE(FBlueprintCopilotModule, FBlueprintCopilot)
 DEFINE_LOG_CATEGORY(BlueprintCopilot2)
+
+#define LOCTEXT_NAMESPACE "FBlueprintCopilotPluginModule"
 
 // Id of the BlueprintCopilot Tab used to spawn and observe this tab.
 const FName BlueprintCopilotTabId = FName(TEXT("BlueprintCopilot"));
@@ -41,6 +45,14 @@ void FBlueprintCopilotModule::StartupModule()
             FCanSpawnTab::CreateLambda([this](const FSpawnTabArgs& Args) -> bool { return CanSpawnEditor(); }))
         .SetMenuType(ETabSpawnerMenuType::Hidden)
         .SetIcon(FSlateIcon(FBlueprintCopilotStyle::GetStyleSetName(), "BlueprintCopilot.MenuIcon"));
+
+    if (auto SettingsModule = FModuleManager::GetModulePtr<ISettingsModule>("Settings"))
+    {
+        SettingsModule->RegisterSettings("Project", "Plugins", "BlueprintCopilot_Settings",
+            LOCTEXT("RuntimeSettingsName", "BlueprintCopilot"),
+            LOCTEXT("RuntimeSettingsDescription", "Configure the settings for BlueprintCopilot"),
+            GetMutableDefault<UBlueprintCopilotSettings>());
+    }
 }
 
 void FBlueprintCopilotModule::ShutdownModule()

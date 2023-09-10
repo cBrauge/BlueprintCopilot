@@ -24,8 +24,8 @@ If everything went well, you should see a `BlueprintCopilot` entry in the `Tools
 
 ### Adding your API Key
 
-In Edit -> Editor Preferences -> BlueprintCopilot:
-Enter your OpenAPI key in the `API key` field. (TODO)
+In Edit -> Project Settings -> Plugins -> BlueprintCopilot:
+Enter your OpenAPI key in the `API key` field.
 
 In order to get a key from OpenAPI, you need to create it [here](https://platform.openai.com/account/api-keys), and don't forget to add funds to your account.
 

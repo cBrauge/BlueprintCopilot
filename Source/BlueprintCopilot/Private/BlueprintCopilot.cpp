@@ -31,7 +31,6 @@ using namespace LibBlueprintCopilot::Guidance;
 
 // TODO move those inside the settings and widget
 LibLLMModel Model{LibLLMModel::FakeLLMModel};
-std::string APIKey{""};
 
 /// @brief Calls LLM and execute the instructions
 /// @param model Model to use
@@ -80,15 +79,17 @@ void UBlueprintCopilot::InitializeTheWidget()
 
 void UBlueprintCopilot::OnTestButtonPressed(FString APIModel, FString GPTModel, FString UserInput)
 {
+    auto pluginSettings{GetMutableDefault<UBlueprintCopilotSettings>()};
+
     UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Selected API Model: %s"), *APIModel);
     UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Selected GPT Model: %s"), *GPTModel);
     UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: User input: %s"), *UserInput);
 
     const auto model{APIModel == "Fake" ? LibLLMModel::FakeLLMModel : LibLLMModel::OpenAILLMModel};
     const auto convertedGPTModel{std::string(TCHAR_TO_UTF8(*GPTModel))};
-    // const auto convertedAPIKey{std::string(TCHAR_TO_UTF8(*APIKey))};
+    const auto convertedAPIKey{std::string(TCHAR_TO_UTF8(*(pluginSettings->APIKey)))};
     const auto convertedUserInput{std::string(TCHAR_TO_UTF8(*UserInput))};
     NumberOfTestButtonPressed++;
-    Execute(model, APIKey, convertedUserInput, convertedGPTModel);
+    Execute(model, convertedAPIKey, convertedUserInput, convertedGPTModel);
     EditorWidget->SetNumberOfTestButtonPressed(NumberOfTestButtonPressed);
 }
