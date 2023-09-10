@@ -29,6 +29,6 @@ public:
 	 */
     void OnTestButtonPressed(FString APIModel, FString GPTModel, FString UserInput);
 
-    // Test variable
-    int32 NumberOfTestButtonPressed = 0;
+    FString TimeMessage;
+    FString ErrorMessage;
 };

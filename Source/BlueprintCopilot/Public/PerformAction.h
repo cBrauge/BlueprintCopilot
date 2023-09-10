@@ -18,18 +18,20 @@
 #include "LevelEditor.h"
 #include "ObjectCache.h"
 
-using namespace LibBlueprintCopilot::Guidance;
+using namespace LibBlueprintCopilot;
 
 static ObjectCache objectCache{};
 
 void HandleBlueprintNotFound(const BlueprintID& blueprintID)
 {
-    UE_LOG(LogTemp, Error, TEXT("Failed to find BlueprintID: %s"), *FString(blueprintID.c_str()));
+    auto message{FString::Printf(TEXT("Failed to find BlueprintID: %s"), *FString(blueprintID.c_str()))};
+    UE_LOG(LogTemp, Error, TEXT("%s"), *message);
 }
 
 void HandleNodeNotFound(const NodeID& nodeID)
 {
-    UE_LOG(LogTemp, Error, TEXT("Failed to find NodeID: %s"), *FString(nodeID.c_str()));
+    auto message{FString::Printf(TEXT("Failed to find NodeID: %s"), *FString(nodeID.c_str()))};
+    UE_LOG(LogTemp, Error, TEXT("%s"), *message);
 }
 
 auto CreateBlueprint(const std::string& name, const BlueprintID& blueprintID)
@@ -45,6 +47,26 @@ auto CreateBlueprint(const std::string& name, const BlueprintID& blueprintID)
     return blueprint;
 }
 
+bool UpdateBlueprint(const BlueprintID& blueprintID)
+{
+    UE_LOG(LogTemp, Error, TEXT("UpdateBlueprint Called for: %s"), *FString(blueprintID.c_str()));
+    auto blueprint{objectCache.GetBlueprint(blueprintID)};
+    if (!blueprint.has_value())
+    {
+        HandleBlueprintNotFound(blueprintID);
+        UE_LOG(LogTemp, Error, TEXT("UpdateBlueprint Called for: %s but not found"), *FString(blueprintID.c_str()));
+        return false;
+    }
+
+    FCompilerResultsLog Results;
+    FBlueprintEditorUtils::MarkBlueprintAsModified(blueprint.value());
+    blueprint.value()->SimpleConstructionScript->Modify();
+    blueprint.value()->PostEditChange();
+    FKismetEditorUtilities::CompileBlueprint(blueprint.value(), EBlueprintCompileOptions::None, &Results);
+
+    return true;
+}
+
 bool AddVariable(
     const BlueprintID& blueprintID, const std::string& name, const FName type, const std::string& value = "")
 {
@@ -57,15 +79,19 @@ bool AddVariable(
 
     FEdGraphPinType PinType;
     PinType.PinCategory = type;
+    bool success        = false;
 
     if (!value.empty())
     {
-        return FBlueprintEditorUtils::AddMemberVariable(*blueprint, name.c_str(), PinType, value.c_str());
+        success = FBlueprintEditorUtils::AddMemberVariable(*blueprint, name.c_str(), PinType, value.c_str());
     }
     else
     {
-        return FBlueprintEditorUtils::AddMemberVariable(*blueprint, name.c_str(), PinType);
+        success = FBlueprintEditorUtils::AddMemberVariable(*blueprint, name.c_str(), PinType);
     }
+
+    UpdateBlueprint(blueprintID);
+    return success;
 }
 
 UEdGraph* GetGraph(const BlueprintID& blueprintID)
@@ -104,7 +130,7 @@ FProperty* GetProperty(const BlueprintID& blueprintID, const std::string& name)
         }
     }
 
-    UE_LOG(LogTemp, Error, TEXT("Failed to find Blueprint property!"));
+    UE_LOG(LogTemp, Error, TEXT("GetProperty: Failed to find Blueprint property: %s"), *FString(blueprintID.c_str()));
     return nullptr;
 }
 
@@ -114,16 +140,20 @@ UK2Node_VariableGet* AddVariableGetNode(
     auto blueprint{objectCache.GetBlueprint(blueprintID)};
     if (!blueprint.has_value())
     {
+        UE_LOG(
+            LogTemp, Error, TEXT("AddVariableGetNode did not found blueprint id: %s"), *FString(blueprintID.c_str()));
+
         HandleBlueprintNotFound(blueprintID);
         return nullptr;
     }
+    ::UpdateBlueprint(blueprintID);
 
     auto eventGraph{GetGraph(blueprintID)};
     auto property{GetProperty(blueprintID, propertyName)};
 
     if (!property)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find Blueprint properties!"));
+        UE_LOG(LogTemp, Error, TEXT("Failed to find Blueprint property: %s"), *FString(propertyName.c_str()));
         return nullptr;
     }
 
@@ -176,7 +206,8 @@ UK2Node_VariableSet* AddVariableSetNode(
 
     if (!property)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find one or more Blueprint properties!"));
+        UE_LOG(LogTemp, Error, TEXT("AddVariableSetNode: Failed to find one or more Blueprint property: %s"),
+            *FString(propertyName.c_str()));
         return nullptr;
     }
 
@@ -252,24 +283,6 @@ bool PositionNode(const NodeID& nodeID, int x, int y)
     return true;
 }
 
-bool UpdateBlueprint(const BlueprintID& blueprintID)
-{
-    auto blueprint{objectCache.GetBlueprint(blueprintID)};
-    if (!blueprint.has_value())
-    {
-        HandleBlueprintNotFound(blueprintID);
-        return false;
-    }
-
-    FCompilerResultsLog Results;
-    FBlueprintEditorUtils::MarkBlueprintAsModified(blueprint.value());
-    blueprint.value()->SimpleConstructionScript->Modify();
-    blueprint.value()->PostEditChange();
-    FKismetEditorUtilities::CompileBlueprint(blueprint.value(), EBlueprintCompileOptions::None, &Results);
-
-    return true;
-}
-
 bool CreateBlueprintPermanently(const BlueprintID& blueprintID)
 {
     ::UpdateBlueprint(blueprintID);
@@ -287,25 +300,33 @@ bool CreateBlueprintPermanently(const BlueprintID& blueprintID)
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprint& action)
+void LogAndDisplayError(UBlueprintCopilotWidget* widget, const FString& message)
+{
+    UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+    widget->SetErrorMessage(message);
+}
+
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::CreateBlueprint& action)
 {
     auto NewBlueprint{::CreateBlueprint(action.BlueprintName, action.BlueprintID)};
     if (!NewBlueprint)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to create blueprint!"));
+        auto message{FString::Printf(TEXT("Failed to create blueprint, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return false;
     }
 
     return true;
 }
 
-bool PerformAction(const CreateLink& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const Guidance::CreateLink& action)
 {
     const auto success{
         ConnectPins(action.SourceNodeID, action.SourcePinName, action.DestinationNodeID, action.DestinationPinName)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to create link"));
+        auto message{FString::Printf(TEXT("Failed to create link, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return success;
     }
 
@@ -323,85 +344,100 @@ auto TypeToSchemaType(const std::string& name)
     return UEdGraphSchema_K2::PC_Int;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariable& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AddVariable& action)
 {
     const auto type{TypeToSchemaType(action.PinCategory)};
     const auto success{::AddVariable(action.BlueprintID, action.VariableName, type, action.DefaultValue)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to add variable"));
+        auto message{FString::Printf(TEXT("Failed to add variable, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return success;
     }
 
     return success;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableGetNode& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AddVariableGetNode& action)
 {
     const auto success{::AddVariableGetNode(action.BlueprintID, action.PropertyName, action.NodeID)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to add variable Get node"));
+        auto message{FString::Printf(TEXT("Failed to add variable Get node, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return false;
     }
 
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddVariableSetNode& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AddVariableSetNode& action)
 {
     const auto success{::AddVariableSetNode(action.BlueprintID, action.PropertyName, action.NodeID)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to add variable Set node"));
+        auto message{FString::Printf(TEXT("Failed to add variable Set node, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return false;
     }
 
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::AddFunctionNode& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AddFunctionNode& action)
 {
     const auto success{::AddFunctionNode(action.BlueprintID, action.FunctionName, action.NodeID)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to add function node"));
+        auto message{FString::Printf(TEXT("Failed to add function node, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return false;
     }
 
     return true;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::PositionNode& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::PositionNode& action)
 {
     const auto success{::PositionNode(action.NodeID, action.x, action.y)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to position node"));
+        auto message{FString::Printf(TEXT("Failed to position node, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return success;
     }
 
     return success;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::UpdateBlueprint& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::UpdateBlueprint& action)
 {
     const auto success{::UpdateBlueprint(action.BlueprintID)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to update blueprint"));
+        auto message{FString::Printf(TEXT("Failed to update blueprint, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return success;
     }
 
     return success;
 }
 
-bool PerformAction(const LibBlueprintCopilot::Guidance::CreateBlueprintPermanently& action)
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::ManualOperation& action)
+{
+    auto message{FString::Printf(TEXT("Can't perform action over manual operation"))};
+    LogAndDisplayError(widget, message);
+    return false;
+}
+
+bool PerformAction(
+    UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::CreateBlueprintPermanently& action)
 {
     const auto success{::CreateBlueprintPermanently(action.BlueprintID)};
     if (!success)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to create blueprint on disk"));
+        auto message{FString::Printf(TEXT("Failed to create blueprint on disk, check logs for more details"))};
+        LogAndDisplayError(widget, message);
         return success;
     }
 

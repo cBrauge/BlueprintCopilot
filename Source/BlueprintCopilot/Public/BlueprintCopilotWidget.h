@@ -27,7 +27,10 @@ public:
      * Set "Global Namespace" option to the Widget.
      */
     UFUNCTION(BlueprintImplementableEvent)
-    void SetNumberOfTestButtonPressed(int32 NewNumber);
+    void SetErrorMessage(const FString& message);
+
+    UFUNCTION(BlueprintImplementableEvent)
+    void SetTime(const FString& time);
 
     /**
      * "Global Namespace" option has been changed on the Widget.

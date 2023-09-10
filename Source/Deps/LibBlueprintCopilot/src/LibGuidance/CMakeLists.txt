@@ -19,9 +19,12 @@ add_library(LibGuidance STATIC
     include/Actions/CreateLink.h
     include/Actions/PositionNode.h
     include/Actions/UpdateBlueprint.h
+    include/Actions/ManualOperation.h
     include/ActionsDeserialization.h
+    include/ParseError.h
     include/Instructions.h
     include/Examples.h
+    include/ParseError.h
     src/OpenAILibLLM.cpp
     src/LibLLMFactory.cpp
     src/FakeLibLLM.cpp

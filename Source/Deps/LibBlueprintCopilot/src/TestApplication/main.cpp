@@ -19,7 +19,8 @@ auto FakeExample()
     const auto libLLM{LibLLMFactory::CreateLibLLM(LibLLMModel::FakeLLMModel, ApiKey)};
 
     // Fake API just returns the input
-    const auto response{libLLM->Request(ListOfInstructions, Gpt4)};
+    // const auto response{libLLM->Request(ListOfInstruccvtions, Gpt4)};
+    const auto response{libLLM->Request(ListOfInstructionsNotNumber, Gpt4)};
     return ConvertResponseToActions(response);
 }
 
@@ -46,5 +47,11 @@ int main()
     const auto actions{FakeExample()};
     //const auto actions{RealExample()};
 
-    PrintActions(actions);
+    if (std::holds_alternative<ParseError>(actions))
+    {
+        std::cerr << std::get<ParseError>(actions).Reason << std::endl;
+        return 1;
+    }
+
+    PrintActions(std::get<std::vector<Action>>(actions));
 }

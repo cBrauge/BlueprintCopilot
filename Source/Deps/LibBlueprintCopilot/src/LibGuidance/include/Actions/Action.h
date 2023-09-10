@@ -9,11 +9,12 @@
 #include "Actions/CreateLink.h"
 #include "Actions/PositionNode.h"
 #include "Actions/UpdateBlueprint.h"
+#include "Actions/ManualOperation.h"
 
 #include <variant>
 
 namespace LibBlueprintCopilot::Guidance
 {
     using Action = std::variant<CreateBlueprint, CreateLink, AddFunctionNode, AddVariable, AddVariableGetNode,
-        AddVariableSetNode, CreateBlueprintPermanently, PositionNode, UpdateBlueprint>;
+        AddVariableSetNode, CreateBlueprintPermanently, PositionNode, UpdateBlueprint, ManualOperation>;
 }

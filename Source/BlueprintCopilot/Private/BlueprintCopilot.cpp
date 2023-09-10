@@ -27,40 +27,86 @@
 #include <unordered_map>
 #include <variant>
 
-using namespace LibBlueprintCopilot::Guidance;
+using namespace LibBlueprintCopilot;
 
-// TODO move those inside the settings and widget
-LibLLMModel Model{LibLLMModel::FakeLLMModel};
+bool DoesNotContainManualOperations(UBlueprintCopilotWidget* widget, const std::vector<Guidance::Action>& actions)
+{
+    const auto containsManualOperation{std::any_of(actions.begin(), actions.end(),
+        [](const Guidance::Action& action) { return std::holds_alternative<Guidance::ManualOperation>(action); })};
+
+    if (!containsManualOperation)
+    {
+        return true;
+    }
+
+    std::ostringstream oss;
+
+    oss << "Can't execute commands, it contains manual operations, you should report what you were trying to do "
+           "and what manual operations was created to the creator of the plugin:"
+        << std::endl;
+    for (const auto& action : actions)
+    {
+        if (!std::holds_alternative<Guidance::ManualOperation>(action))
+        {
+            continue;
+        }
+
+        oss << PrettyPrint(std::get<Guidance::ManualOperation>(action)) << std::endl << std::endl;
+    }
+
+    widget->SetErrorMessage(FString(oss.str().c_str()));
+    return false;
+}
 
 /// @brief Calls LLM and execute the instructions
 /// @param model Model to use
 /// @param api_key API Key to the llm service
 /// @param user_input What the user wants to do, if using the fake model, simply put the json array of actions
 /// @param gpt_model Kind of GPT model to use: 'gpt-4', 'gpt-3.5-turbo'...
-void Execute(LibLLMModel model, std::string_view api_key, std::string user_input, std::string_view gpt_model)
+bool Execute(UBlueprintCopilotWidget* widget, Guidance::LibLLMModel model, std::string_view api_key,
+    std::string user_input, std::string_view gpt_model)
 {
-    const auto libLLM{LibLLMFactory::CreateLibLLM(model, api_key)};
+    const auto libLLM{Guidance::LibLLMFactory::CreateLibLLM(model, api_key)};
 
     const auto response{libLLM->Request(user_input, gpt_model)};
-    const auto actions{ConvertResponseToActions(response)};
-    int i{0};
-    for (const auto& action : actions)
-    {
-        // TODO check manual action
+    UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: Raw response: %s"), *FString(response.c_str()));
 
+    const auto actions{Guidance::ConvertResponseToActions(response)};
+    if (std::holds_alternative<Guidance::ParseError>(actions))
+    {
+        auto parseError{FString(std::get<Guidance::ParseError>(actions).Reason.c_str())};
+        UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Failed to parse response of OpenAI: %s"), *parseError);
+        widget->SetErrorMessage(parseError);
+        return false;
+    }
+
+    // Ensure there are no ManualOperation
+    if (!DoesNotContainManualOperations(widget, std::get<std::vector<Guidance::Action>>(actions)))
+    {
+        return false;
+    }
+
+    int i{0};
+    for (const auto& action : std::get<std::vector<Guidance::Action>>(actions))
+    {
         const auto success{std::visit(
-            [&i](const auto& a) -> bool {
-                UE_LOG(
-                    LogTemp, Warning, TEXT("BlueprintCopilot: Action #%d: %s"), i++, *FString(PrettyPrint(a).c_str()));
-                return PerformAction(a);
+            [&](const auto& a) -> bool {
+                UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: Action #%d: %s"), i, *FString(PrettyPrint(a).c_str()));
+                return PerformAction(widget, a);
             },
             action)};
         if (!success)
         {
-            UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Failed!"));
-            return;
+            UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Failed at action #%d"), i);
+            return false;
         }
+
+        ::UpdateBlueprint("TestBLUEPRINT");
+
+        i++;
     }
+
+    return true;
 }
 
 void UBlueprintCopilot::Init()
@@ -71,7 +117,7 @@ void UBlueprintCopilot::Init()
 void UBlueprintCopilot::InitializeTheWidget()
 {
     // Initialize the widget here
-    EditorWidget->SetNumberOfTestButtonPressed(NumberOfTestButtonPressed);
+    EditorWidget->SetErrorMessage("");
 
     // Bind all required delegates to the Widget.
     EditorWidget->OnTestButtonPressedDelegate.BindUObject(this, &UBlueprintCopilot::OnTestButtonPressed);
@@ -79,17 +125,47 @@ void UBlueprintCopilot::InitializeTheWidget()
 
 void UBlueprintCopilot::OnTestButtonPressed(FString APIModel, FString GPTModel, FString UserInput)
 {
-    auto pluginSettings{GetMutableDefault<UBlueprintCopilotSettings>()};
+    auto startTime = std::chrono::high_resolution_clock::now();
+    try
+    {
+        EditorWidget->SetTime("Execution started... It can take a while");
+        auto pluginSettings{GetMutableDefault<UBlueprintCopilotSettings>()};
 
-    UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Selected API Model: %s"), *APIModel);
-    UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: Selected GPT Model: %s"), *GPTModel);
-    UE_LOG(LogTemp, Error, TEXT("BlueprintCopilot: User input: %s"), *UserInput);
+        UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: Selected API Model: %s"), *APIModel);
+        UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: Selected GPT Model: %s"), *GPTModel);
+        UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: User input: %s"), *UserInput);
 
-    const auto model{APIModel == "Fake" ? LibLLMModel::FakeLLMModel : LibLLMModel::OpenAILLMModel};
-    const auto convertedGPTModel{std::string(TCHAR_TO_UTF8(*GPTModel))};
-    const auto convertedAPIKey{std::string(TCHAR_TO_UTF8(*(pluginSettings->APIKey)))};
-    const auto convertedUserInput{std::string(TCHAR_TO_UTF8(*UserInput))};
-    NumberOfTestButtonPressed++;
-    Execute(model, convertedAPIKey, convertedUserInput, convertedGPTModel);
-    EditorWidget->SetNumberOfTestButtonPressed(NumberOfTestButtonPressed);
+        const auto model{
+            APIModel == "Fake" ? Guidance::LibLLMModel::FakeLLMModel : Guidance::LibLLMModel::OpenAILLMModel};
+        const auto convertedGPTModel{std::string(TCHAR_TO_UTF8(*GPTModel))};
+        const auto convertedAPIKey{std::string(TCHAR_TO_UTF8(*(pluginSettings->APIKey)))};
+        const auto convertedUserInput{std::string(TCHAR_TO_UTF8(*UserInput))};
+
+        auto success{Execute(EditorWidget, model, convertedAPIKey, convertedUserInput, convertedGPTModel)};
+        auto finishTime = std::chrono::high_resolution_clock::now();
+        auto duration   = std::chrono::duration_cast<std::chrono::seconds>(finishTime - startTime);
+        int minutes     = duration.count() / 60;
+        int seconds     = duration.count() % 60;
+        auto time       = FString::Printf(TEXT("%d:%d min"), minutes, seconds);
+        EditorWidget->SetTime(time);
+        UE_LOG(LogTemp, Log, TEXT("%s"), *time);
+
+        if (success)
+        {
+            EditorWidget->SetErrorMessage("Finished successfuly");
+        }
+    }
+    catch (std::exception& e)
+    {
+        auto finishTime = std::chrono::high_resolution_clock::now();
+        auto duration   = std::chrono::duration_cast<std::chrono::seconds>(finishTime - startTime);
+        int minutes     = duration.count() / 60;
+        int seconds     = duration.count() % 60;
+        auto time       = FString::Printf(TEXT("%d:%d min"), minutes, seconds);
+        UE_LOG(LogTemp, Error, TEXT("%s"), *time);
+
+        auto error = FString::Printf(TEXT("Caught exception: %s"), *FString(e.what()));
+        UE_LOG(LogTemp, Error, TEXT("%s"), *error);
+        EditorWidget->SetErrorMessage(error);
+    }
 }

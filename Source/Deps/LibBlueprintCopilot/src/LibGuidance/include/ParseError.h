@@ -4,10 +4,11 @@
 
 namespace LibBlueprintCopilot::Guidance
 {
-    class BaseAction
+    class ParseError
     {
     public:
-        std::string OriginalJson;
-        std::string Type;
+        ParseError(std::string reason) : Reason {reason}{}
+        const std::string Reason;
     };
+
 } // namespace LibBlueprintCopilot::Guidance
