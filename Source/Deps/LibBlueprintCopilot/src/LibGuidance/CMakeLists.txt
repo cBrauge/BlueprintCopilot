@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.26)
 project(LibGuidance)
 
 add_library(LibGuidance STATIC
+    include/AzureLibLLM.h
     include/FakeLibLLM.h
     include/ILibLLM.h
     include/LibLLMFactory.h
@@ -26,6 +27,7 @@ add_library(LibGuidance STATIC
     include/Examples.h
     include/ParseError.h
     src/OpenAILibLLM.cpp
+    src/AzureLibLLM.cpp
     src/LibLLMFactory.cpp
     src/FakeLibLLM.cpp
     src/ActionsDeserialization.cpp

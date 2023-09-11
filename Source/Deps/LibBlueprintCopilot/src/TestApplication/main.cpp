@@ -1,13 +1,15 @@
 #include "ActionsDeserialization.h"
-#include "LibLLMFactory.h"
-
 #include "Examples.h"
+#include "LibLLMFactory.h"
 
 #include <iostream>
 #include <variant>
 
 // DO NOT PUSH YOUR OWN API KEY
 const auto ApiKey{""};
+// Azure, DO NOT PUSH
+const auto ResourceName{""};
+const auto DeploymentId{""};
 
 const auto Gpt3{"gpt-3.5-turbo"};
 const auto Gpt4{"gpt-4"};
@@ -33,6 +35,15 @@ auto RealExample()
     return ConvertResponseToActions(response);
 }
 
+auto RealAzureExample()
+{
+    const auto libLLM{LibLLMFactory::CreateLibLLM(LibLLMModel::AzureLLMModel, ApiKey, ResourceName, DeploymentId)};
+
+    // Real api, sending a real request
+    const auto response{libLLM->Request(Request, Gpt4)};
+    return ConvertResponseToActions(response);
+}
+
 void PrintActions(const auto& actions)
 {
     auto i{0};
@@ -44,8 +55,9 @@ void PrintActions(const auto& actions)
 
 int main()
 {
-    const auto actions{FakeExample()};
-    //const auto actions{RealExample()};
+    // const auto actions{FakeExample()};
+    //  const auto actions{RealExample()};
+    const auto actions{RealAzureExample()};
 
     if (std::holds_alternative<ParseError>(actions))
     {

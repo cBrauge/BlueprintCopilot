@@ -11,4 +11,13 @@ class BLUEPRINTCOPILOT_API UBlueprintCopilotSettings : public UObject
 public:
     UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = "Settings")
     FString APIKey;
+
+    UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+    FString AzureResourceName;
+
+    UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+    FString AzureDeploymentId;
+
+    UPROPERTY(Config, EditAnywhere, BlueprintReadWrite, Category = "Settings")
+    FString AzureAPIVersion;
 };
