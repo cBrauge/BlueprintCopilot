@@ -10,13 +10,19 @@ It allows you to tell OpenAI what you want to do and it performs it automaticall
 
 ## Using the Plugin
 
+### Pre-requisites
+
+- Make sure `cmake` is installed and in your PATH env variable (running `cmake` in a terminal should not result in an error), you can install cmake via Visual Studio Installer
+
 ### Importing the plugin in your project
 
 In order to import the plugin in your project:
 - Create a `Plugins` folder at the root directory of your UE project
 - Create a `BlueprintCopilot` folder inside the `Plugins` folder
 - Place the content of this repository in `BlueprintCopilot/`
-- Start your UE project
+- Start your UE project (you should have a pop up that asks to re-compile the plugin)
+- The very first compile will take a long time, do not be surprised, you can see the progress in `Saved/Logs/<project name>.log`
+  - In the case that the log do not display updates, it is observed that on a totally fresh build, you have to reboot and open the UE project again
 - In Edit -> Plugins -> Select BlueprintCopilot
 - Close and open your project again for the plugin to be loaded (it might take a certain time because it needs to build it the first time)
 
@@ -386,7 +392,7 @@ bool PerformAction(const LibBlueprintCopilot::Guidance::YourNewAction& action)
         return success;
     }
 
-    return success;	
+    return success;
 }
 ```
 

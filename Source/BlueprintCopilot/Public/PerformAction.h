@@ -117,7 +117,7 @@ FProperty* GetProperty(const BlueprintID& blueprintID, const std::string& name)
     if (!blueprint.has_value())
     {
         HandleBlueprintNotFound(blueprintID);
-        return false;
+        return nullptr;
     }
 
     const auto fstring{FString(name.c_str())};
