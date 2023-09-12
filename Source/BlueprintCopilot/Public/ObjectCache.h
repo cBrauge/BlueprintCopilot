@@ -8,8 +8,9 @@
 #include <string>
 #include <unordered_map>
 
-using BlueprintID = std::string;
-using NodeID      = std::string;
+using BlueprintID   = std::string;
+using BlueprintType = std::string;
+using NodeID        = std::string;
 
 /// @brief Because there could be multiple nodes for a same property, we need to keep an internal cache so that the
 /// instructions knows which specific node they want. Internal dynamic data of UE, such as a pointer are not available

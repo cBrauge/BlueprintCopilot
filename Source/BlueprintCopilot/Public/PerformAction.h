@@ -2,6 +2,7 @@
 #pragma once
 
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Blueprint/UserWidget.h"
 #include "BlueprintCopilotWidget.h"
 #include "Editor.h"
 #include "EditorUtilitySubsystem.h"
@@ -17,6 +18,10 @@
 #include "KismetCompiler.h"
 #include "LevelEditor.h"
 #include "ObjectCache.h"
+#include "WidgetBlueprint.h"
+#include "Components/TextBlock.h"
+#include "Blueprint/WidgetTree.h"
+#include "Internationalization/Text.h"
 
 using namespace LibBlueprintCopilot;
 
@@ -34,13 +39,36 @@ void HandleNodeNotFound(const NodeID& nodeID)
     UE_LOG(LogTemp, Error, TEXT("%s"), *message);
 }
 
-auto CreateBlueprint(const std::string& name, const BlueprintID& blueprintID)
+UBlueprint* CreateBlueprint(const std::string& name, const BlueprintID& blueprintID, const BlueprintType& type)
 {
+    UClass* baseClass               = nullptr;
+    UClass* blueprintClass          = nullptr;
+    UClass* blueprintGeneratedClass = nullptr;
+
+    if (type == "Actor")
+    {
+        baseClass               = AActor::StaticClass();
+        blueprintClass          = UBlueprint::StaticClass();
+        blueprintGeneratedClass = UBlueprintGeneratedClass::StaticClass();
+    }
+    else if (type == "Widget")
+    {
+        baseClass               = UUserWidget::StaticClass();
+        blueprintClass          = UWidgetBlueprint::StaticClass();
+        blueprintGeneratedClass = UBlueprintGeneratedClass::StaticClass();
+    }
+    else
+    {
+        auto message{FString::Printf(TEXT("Type of blueprint not supported: %s"), *FString(type.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return nullptr;
+    }
+
     auto targetPackage{
         CreatePackage(*FString::Printf(TEXT("/Game/BlueprintCopilotGeneratedBlueprints/%s"), *FString(name.c_str())))};
 
-    auto blueprint{FKismetEditorUtilities::CreateBlueprint(AActor::StaticClass(), targetPackage, *FString(name.c_str()),
-        BPTYPE_Normal, UBlueprint::StaticClass(), UBlueprintGeneratedClass::StaticClass())};
+    auto blueprint{FKismetEditorUtilities::CreateBlueprint(
+        baseClass, targetPackage, *FString(name.c_str()), BPTYPE_Normal, blueprintClass, blueprintGeneratedClass)};
 
     objectCache.UpsertBlueprint(blueprintID, blueprint);
 
@@ -60,7 +88,11 @@ bool UpdateBlueprint(const BlueprintID& blueprintID)
 
     FCompilerResultsLog Results;
     FBlueprintEditorUtils::MarkBlueprintAsModified(blueprint.value());
-    blueprint.value()->SimpleConstructionScript->Modify();
+    if (blueprint.value()->SimpleConstructionScript)
+    {
+        blueprint.value()->SimpleConstructionScript->Modify();
+    }
+
     blueprint.value()->PostEditChange();
     FKismetEditorUtilities::CompileBlueprint(blueprint.value(), EBlueprintCompileOptions::None, &Results);
 
@@ -269,6 +301,52 @@ auto ConnectPins(const NodeID& outputNodeID, const std::string& outputPinName, c
     return true;
 }
 
+bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, FString text)
+{
+    auto blueprint{objectCache.GetBlueprint(blueprintID)};
+    if (!blueprint.has_value())
+    {
+        HandleBlueprintNotFound(blueprintID);
+        return false;
+    }
+
+    // Ensure it's a WidgetBlueprint
+    auto widgetBlueprint = Cast<UWidgetBlueprint>(blueprint.value());
+    if (!widgetBlueprint)
+    {
+        // The provided blueprint is not a WidgetBlueprint
+        auto message{FString::Printf(TEXT("Blueprint %s is not a widget blueprint, can't add UI to it"), *FString(blueprintID.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return false;
+    }
+
+    auto widgetTree = widgetBlueprint->WidgetTree;
+    if (!widgetTree)
+    {
+        auto message{FString::Printf(TEXT("Blueprint %s is a widget blueprint, but doesn't have a valid WidgetTree"), *FString(blueprintID.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return false;
+    }
+
+    // Create a new TextBlock
+    auto newTextBlock = widgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), NAME_None);
+    if (!newTextBlock)
+    {
+        // Failed to construct the TextBlock
+        auto message{FString::Printf(TEXT("Blueprint %s failed to create text block"), *FString(blueprintID.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return false;
+    }
+
+    newTextBlock->SetText(FText::FromString(text));
+
+    widgetTree->RootWidget = newTextBlock;
+
+    UpdateBlueprint(blueprintID);
+
+    return true;
+}
+
 bool PositionNode(const NodeID& nodeID, int x, int y)
 {
     auto node{objectCache.GetNode(nodeID)};
@@ -308,7 +386,7 @@ void LogAndDisplayError(UBlueprintCopilotWidget* widget, const FString& message)
 
 bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::CreateBlueprint& action)
 {
-    auto NewBlueprint{::CreateBlueprint(action.BlueprintName, action.BlueprintID)};
+    auto NewBlueprint{::CreateBlueprint(action.BlueprintName, action.BlueprintID, action.BlueprintType)};
     if (!NewBlueprint)
     {
         auto message{FString::Printf(TEXT("Failed to create blueprint, check logs for more details"))};

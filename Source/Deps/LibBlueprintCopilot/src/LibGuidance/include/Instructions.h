@@ -16,9 +16,9 @@ namespace LibBlueprintCopilot::Guidance
              CreateBlueprintPermanently.
              Be also careful to return a json array, this is very important.
 
-             + CreateBlueprint(BlueprintName, BlueprintID) : Creates a blueprint, basically calling
+             + CreateBlueprint(BlueprintName, BlueprintID, BlueprintType) : Creates a blueprint, basically calling
              FKismetEditorUtilities::CreateBlueprint, is stored internally with BlueprintID and referenced with it for
-             future actions.
+             future actions. The type is either Actor or Widget
              + AddVariable(BlueprintID, VariableName, PinCategory, DefaultValue) : Adds a member variable variableName
              to a blueprint, with a value if provided, be careful with the pin category, it must be of type
              UEdGraphSchema_K2, if you don't know what to put for DefaultValue, just put an empty string
@@ -35,6 +35,9 @@ namespace LibBlueprintCopilot::Guidance
              not strings
              + UpdateBlueprint(BlueprintID) : Marks the blueprint as modified, and compile it
              + CreateBlueprintPermanently(BlueprintID) : Creates the blueprint on disk
+             + AssignNode(NodeID, NodeName): Assigns an existing node to NodeID, use this when you need to get things like "Begin Play"
+             + SetPinValue(NodeID, PinName, Value): Sets the value of a pin, use this when you need to set a value to a pin
+             + AddTextBlockToWidgetBlueprint(BlueprintID, Text): Adds a text block with content Text to the blueprint, the blueprint needs to be a widget blueprint
              + ManualOperation(WhatToDo) : Some manual steps that your human companion will have to do
 
              Your response will be a list of actions from the above list, with the
@@ -46,6 +49,8 @@ namespace LibBlueprintCopilot::Guidance
              with default value 5, it would look like this:
         [{ "Type": "AddVariable", "BlueprintID" : "name_of_my_blueprint_guiwbeibweifs1651", "VariableName" : "foo",
         "PinCategory" : "UEdGraphSchema_K2::PC_Int", "DefaultValue" : "5"}]
-        
+
         [INSTRUCTIONS])"};
 }
+
+// I want a UI that when I start debugging my game, it shows a number that increments every second

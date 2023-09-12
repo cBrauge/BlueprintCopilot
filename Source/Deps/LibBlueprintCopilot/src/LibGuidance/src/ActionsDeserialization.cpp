@@ -1,9 +1,8 @@
 #include "ActionsDeserialization.h"
 
 #include <iostream>
-#include <unordered_map>
-
 #include <nlohmann/json.hpp>
+#include <unordered_map>
 
 using json = nlohmann::json;
 
@@ -28,10 +27,7 @@ namespace LibBlueprintCopilot::Guidance
         }
         catch (nlohmann::json::parse_error& e)
         {
-            nlohmann::json error_obj = {
-                {"error", e.what()},
-                {"position", e.byte}, {"full_input", array_str}
-            };
+            nlohmann::json error_obj = {{"error", e.what()}, {"position", e.byte}, {"full_input", array_str}};
 
             return ParseError(error_obj.dump());
         }
@@ -130,6 +126,14 @@ namespace LibBlueprintCopilot::Guidance
                 else if (type == "ManualOperation")
                 {
                     actions.emplace_back(item.get<ManualOperation>());
+                }
+                else if (type == "AddTextBlockToWidgetBlueprint")
+                {
+                    actions.emplace_back(item.get<AddTextBlockToWidgetBlueprint>());
+                }
+                else if (type == "AssignNode")
+                {
+                    actions.emplace_back(item.get<AssignNode>());
                 }
                 else
                 {

@@ -21,17 +21,21 @@ add_library(LibGuidance STATIC
     include/Actions/PositionNode.h
     include/Actions/UpdateBlueprint.h
     include/Actions/ManualOperation.h
+    include/Actions/AddTextBlockToWidgetBlueprint.h
+    include/Actions/AssignNode.h
     include/ActionsDeserialization.h
     include/ParseError.h
     include/Instructions.h
     include/Examples.h
     include/ParseError.h
+    include/Azure.h
     src/OpenAILibLLM.cpp
     src/AzureLibLLM.cpp
     src/LibLLMFactory.cpp
     src/FakeLibLLM.cpp
     src/ActionsDeserialization.cpp
-)
+    src/Azure.cpp
+ )
 
 target_link_libraries(LibGuidance
     PRIVATE nlohmann_json libcurl oai

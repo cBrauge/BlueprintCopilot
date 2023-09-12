@@ -10,6 +10,7 @@ const auto ApiKey{""};
 // Azure, DO NOT PUSH
 const auto ResourceName{""};
 const auto DeploymentId{""};
+const auto AzureAPIVersion{""};
 
 const auto Gpt3{"gpt-3.5-turbo"};
 const auto Gpt4{"gpt-4"};
@@ -37,7 +38,8 @@ auto RealExample()
 
 auto RealAzureExample()
 {
-    const auto libLLM{LibLLMFactory::CreateLibLLM(LibLLMModel::AzureLLMModel, ApiKey, ResourceName, DeploymentId)};
+    const auto libLLM{
+        LibLLMFactory::CreateLibLLM(LibLLMModel::AzureLLMModel, ApiKey, ResourceName, DeploymentId, AzureAPIVersion)};
 
     // Real api, sending a real request
     const auto response{libLLM->Request(Request, Gpt4)};

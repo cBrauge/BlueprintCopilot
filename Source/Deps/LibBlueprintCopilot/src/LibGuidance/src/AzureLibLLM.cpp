@@ -1,5 +1,6 @@
 #include "AzureLibLLM.h"
 
+#include "Azure.h"
 #include "Instructions.h"
 #include "liboai.h"
 
@@ -28,7 +29,7 @@ namespace LibBlueprintCopilot::Guidance
             {
                 convo.AddUserData(input);
                 auto response =
-                    oai.Azure->create_chat_completion(azureResourceName, azureDeploymentId, azureAPIVersion, convo);
+                    azure->create_chat_completion(azureResourceName, azureDeploymentId, azureAPIVersion, convo);
 
                 convo.Update(response);
 
@@ -44,6 +45,9 @@ namespace LibBlueprintCopilot::Guidance
     public:
         liboai::OpenAI oai;
         liboai::Conversation convo{SystemData};
+        // This is hacky, we're not using the original Azure impl because it forces to use a specific endpoint which is
+        // not always true.
+        std::unique_ptr<Myliboai::Azure> azure = std::make_unique<Myliboai::Azure>();
         std::string azureResourceName;
         std::string azureDeploymentId;
         std::string azureAPIVersion;
