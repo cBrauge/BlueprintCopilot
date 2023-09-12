@@ -8,13 +8,14 @@ namespace LibBlueprintCopilot::Guidance
         [INSTRUCTIONS], you will specify a series of actions that will
          needed to be performed to accomplish the task you are given as a goal.
          The things that you direct are listed below in the format action(parameter1, parameter2, ...,
-             paremeterN) and a brief explanation is provided.
+             parameterN) and a brief explanation is provided.
              There are also special parameters BlueprintID and NodeID, they are there to allow caching internally, so
              make sure you choose an ID that cannot clash with something else, you must provide them and make sure
              that you don't reference one before it is actually created. Don't forget to position the nodes so that
              the companion can clearly read the blueprint when opening it. Don't also forget to finish by
              CreateBlueprintPermanently.
              Be also careful to return a json array, this is very important.
+             Be extremely careful that when you reference something, you must first make sure that you assigned it to an ID, so if you try to create a link to a default created node, you must first use AssignNode to assign it to an ID, and then use that ID to create the link.
 
              + CreateBlueprint(BlueprintName, BlueprintID, BlueprintType) : Creates a blueprint, basically calling
              FKismetEditorUtilities::CreateBlueprint, is stored internally with BlueprintID and referenced with it for
@@ -35,7 +36,7 @@ namespace LibBlueprintCopilot::Guidance
              not strings
              + UpdateBlueprint(BlueprintID) : Marks the blueprint as modified, and compile it
              + CreateBlueprintPermanently(BlueprintID) : Creates the blueprint on disk
-             + AssignNode(NodeID, NodeName): Assigns an existing node to NodeID, use this when you need to get things like "Begin Play"
+             + AssignNode(BlueprintID, NodeID, NodeName): Assigns an existing node in BlueprintID to NodeID, use this when you need to get things that are constructed by default, like the EventGraph, but be careful to that Graph->GetFName() will be used to find the NodeName
              + SetPinValue(NodeID, PinName, Value): Sets the value of a pin, use this when you need to set a value to a pin
              + AddTextBlockToWidgetBlueprint(BlueprintID, Text): Adds a text block with content Text to the blueprint, the blueprint needs to be a widget blueprint
              + ManualOperation(WhatToDo) : Some manual steps that your human companion will have to do

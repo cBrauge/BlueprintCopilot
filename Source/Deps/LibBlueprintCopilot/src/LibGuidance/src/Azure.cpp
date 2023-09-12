@@ -31,7 +31,7 @@ liboai::Response Myliboai::Azure::create_chat_completion(const std::string& reso
     params.Add({"api-version", api_version});
 
     Response res;
-    res = this->Request(Method::HTTP_POST, ("https://" + resource_name + "openai/deployments/" + deployment_id),
+    res = this->Request(Method::HTTP_POST, ("https://" + resource_name + "/openai/deployments/" + deployment_id),
         "/chat/completions", "application/json", this->auth_.GetAzureAuthorizationHeaders(),
         netimpl::components::Body{jcon.dump()}, std::move(params),
         stream ? netimpl::components::WriteCallback{std::move(stream.value())} : netimpl::components::WriteCallback{},

@@ -43,6 +43,8 @@ auto RealAzureExample()
 
     // Real api, sending a real request
     const auto response{libLLM->Request(Request, Gpt4)};
+
+    std::cout << "Response:" << std::endl << response << std::endl;
     return ConvertResponseToActions(response);
 }
 
@@ -60,6 +62,7 @@ int main()
     // const auto actions{FakeExample()};
     //  const auto actions{RealExample()};
     const auto actions{RealAzureExample()};
+
 
     if (std::holds_alternative<ParseError>(actions))
     {

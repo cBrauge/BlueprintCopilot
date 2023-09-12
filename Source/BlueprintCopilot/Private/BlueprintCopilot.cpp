@@ -157,11 +157,11 @@ void UBlueprintCopilot::OnTestButtonPressed(FString APIModel, FString GPTModel, 
         const auto convertedAzureDeploymentId{std::string(TCHAR_TO_UTF8(*(pluginSettings->AzureDeploymentId)))};
         const auto convertedAzureAPIVersion{std::string(TCHAR_TO_UTF8(*(pluginSettings->AzureAPIVersion)))};
 
-        // auto success{Execute(EditorWidget, model, convertedAPIKey, convertedUserInput, convertedGPTModel, convertedAzureResourceName, convertedAzureDeploymentId, convertedAzureAPIVersion)};
-        UBlueprint* blueprint{CreateBlueprint("Test", "0", "Widget")};
-        AddTextBlockToWidgetBlueprint("0", "This is a test");
-        CreateBlueprintPermanently("0");
-        auto success{true};
+        auto success{Execute(EditorWidget, model, convertedAPIKey, convertedUserInput, convertedGPTModel, convertedAzureResourceName, convertedAzureDeploymentId, convertedAzureAPIVersion)};
+        // UBlueprint* blueprint{CreateBlueprint("Test", "0", "Widget")};
+        // AddTextBlockToWidgetBlueprint("0", "This is a test");
+        // CreateBlueprintPermanently("0");
+        // auto success{true};
 
         auto finishTime = std::chrono::high_resolution_clock::now();
         auto duration   = std::chrono::duration_cast<std::chrono::seconds>(finishTime - startTime);

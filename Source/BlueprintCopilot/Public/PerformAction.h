@@ -3,12 +3,15 @@
 
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Blueprint/UserWidget.h"
+#include "Blueprint/WidgetTree.h"
 #include "BlueprintCopilotWidget.h"
+#include "Components/TextBlock.h"
 #include "Editor.h"
 #include "EditorUtilitySubsystem.h"
 #include "EditorUtilityWidget.h"
 #include "EditorUtilityWidgetBlueprint.h"
 #include "Engine/SimpleConstructionScript.h"
+#include "Internationalization/Text.h"
 #include "K2Node_CallFunction.h"
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
@@ -19,9 +22,6 @@
 #include "LevelEditor.h"
 #include "ObjectCache.h"
 #include "WidgetBlueprint.h"
-#include "Components/TextBlock.h"
-#include "Blueprint/WidgetTree.h"
-#include "Internationalization/Text.h"
 
 using namespace LibBlueprintCopilot;
 
@@ -206,9 +206,11 @@ UK2Node_CallFunction* AddFunctionNode(
     auto functionFString{FString(functionName.c_str())};
     // TODO check outside of math class and have to specify to openai
     const auto kismetMathLibraryNamespace{std::string{"UKismetMathLibrary::"}};
-    if (functionName._Starts_with(kismetMathLibraryNamespace))
+    const auto kismetMathLibraryNamespace2{std::string{"KismetMathLibrary::"}};
+    if (functionName._Starts_with(kismetMathLibraryNamespace) || functionName._Starts_with(kismetMathLibraryNamespace2))
     {
-        auto realFunctionName{FString(functionName.substr(kismetMathLibraryNamespace.size()).c_str())};
+        auto pos{functionName.find("::")};
+        auto realFunctionName{FString(functionName.substr(pos + 2).c_str())};
         auto function{UKismetMathLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
         if (!function)
         {
@@ -301,8 +303,9 @@ auto ConnectPins(const NodeID& outputNodeID, const std::string& outputPinName, c
     return true;
 }
 
-bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, FString text)
+bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, const std::string& intext)
 {
+    auto text{FString(intext.c_str())};
     auto blueprint{objectCache.GetBlueprint(blueprintID)};
     if (!blueprint.has_value())
     {
@@ -315,7 +318,8 @@ bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, FString text)
     if (!widgetBlueprint)
     {
         // The provided blueprint is not a WidgetBlueprint
-        auto message{FString::Printf(TEXT("Blueprint %s is not a widget blueprint, can't add UI to it"), *FString(blueprintID.c_str()))};
+        auto message{FString::Printf(
+            TEXT("Blueprint %s is not a widget blueprint, can't add UI to it"), *FString(blueprintID.c_str()))};
         UE_LOG(LogTemp, Error, TEXT("%s"), *message);
         return false;
     }
@@ -323,7 +327,8 @@ bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, FString text)
     auto widgetTree = widgetBlueprint->WidgetTree;
     if (!widgetTree)
     {
-        auto message{FString::Printf(TEXT("Blueprint %s is a widget blueprint, but doesn't have a valid WidgetTree"), *FString(blueprintID.c_str()))};
+        auto message{FString::Printf(TEXT("Blueprint %s is a widget blueprint, but doesn't have a valid WidgetTree"),
+            *FString(blueprintID.c_str()))};
         UE_LOG(LogTemp, Error, TEXT("%s"), *message);
         return false;
     }
@@ -376,6 +381,50 @@ bool CreateBlueprintPermanently(const BlueprintID& blueprintID)
     blueprint.value()->MarkPackageDirty();
 
     return true;
+}
+
+bool AssignNode(const BlueprintID& blueprintID, const NodeID& nodeID, const std::string& nodeName)
+{
+    auto node{objectCache.GetNode(nodeID)};
+    if (node.has_value())
+    {
+        auto message{FString::Printf(TEXT("Node %s is already assigned"), *FString(nodeID.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return false;
+    }
+
+    auto blueprint{objectCache.GetBlueprint(blueprintID)};
+    if (!blueprint.has_value())
+    {
+        HandleBlueprintNotFound(blueprintID);
+        return false;
+    }
+
+    for (auto graph : blueprint.value()->UbergraphPages)
+    {
+        for (auto graphNode : graph->Nodes)
+        {
+            if (graphNode->GetFName() == FString(nodeName.c_str()))
+            {
+                auto k2Node = Cast<UK2Node>(graphNode.Get());
+                if (!k2Node)
+                {
+                    auto message{
+                        FString::Printf(TEXT("Found Node %s but it's not a UK2Node"), *FString(nodeName.c_str()))};
+                    UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+                    return false;
+                }
+
+                objectCache.UpsertNode(nodeID, k2Node);
+                return true;
+            }
+        }
+    }
+
+    auto message{FString::Printf(TEXT("Did not found a node named %s in blueprint %s"), *FString(nodeID.c_str()),
+        *FString(blueprintID.c_str()))};
+    UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+    return false;
 }
 
 void LogAndDisplayError(UBlueprintCopilotWidget* widget, const FString& message)
@@ -515,6 +564,33 @@ bool PerformAction(
     if (!success)
     {
         auto message{FString::Printf(TEXT("Failed to create blueprint on disk, check logs for more details"))};
+        LogAndDisplayError(widget, message);
+        return success;
+    }
+
+    return success;
+}
+
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AssignNode& action)
+{
+    const auto success{::AssignNode(action.BlueprintID, action.NodeID, action.NodeName)};
+    if (!success)
+    {
+        auto message{FString::Printf(TEXT("Failed to assign node, check logs for more details"))};
+        LogAndDisplayError(widget, message);
+        return success;
+    }
+
+    return success;
+}
+
+bool PerformAction(
+    UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AddTextBlockToWidgetBlueprint& action)
+{
+    const auto success{::AddTextBlockToWidgetBlueprint(action.BlueprintID, action.Text)};
+    if (!success)
+    {
+        auto message{FString::Printf(TEXT("Failed to add text block to widget blueprint"))};
         LogAndDisplayError(widget, message);
         return success;
     }

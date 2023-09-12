@@ -41,7 +41,8 @@ namespace LibBlueprintCopilot::Guidance
   {
     "Type": "CreateBlueprint",
     "BlueprintName": "TestBLUEPRINT",
-    "BlueprintID": "ID_TestBLUEPRINT"
+    "BlueprintID": "ID_TestBLUEPRINT",
+    "BlueprintType": "Actor"
   },
   {
     "Type": "AddVariable",
@@ -83,7 +84,7 @@ namespace LibBlueprintCopilot::Guidance
   {
     "Type": "AddFunctionNode",
     "BlueprintID": "ID_TestBLUEPRINT",
-    "FunctionName": "Add_IntInt",
+    "FunctionName": "KismetMathLibrary::Add_IntInt",
     "NodeID": "ID_AddFunctionNode"
   },
   {
@@ -161,13 +162,13 @@ Some stuff at the end
 )"};
 
         const auto ListOfInstructionsNotNumber{R"([
-  { "Type": "CreateBlueprint", "BlueprintName": "TestBLUEPRINT", "BlueprintID": "TestBLUEPRINT_ID"},
+  { "Type": "CreateBlueprint", "BlueprintName": "TestBLUEPRINT", "BlueprintID": "TestBLUEPRINT_ID", "BlueprintType": "Actor"},
   { "Type": "AddVariable", "BlueprintID": "TestBLUEPRINT_ID", "VariableName": "MyVariable", "PinCategory": "UEdGraphSchema_K2::PC_Int", "DefaultValue": "5"},
   { "Type": "AddVariable", "BlueprintID": "TestBLUEPRINT_ID", "VariableName": "MyOtherVariable", "PinCategory": "UEdGraphSchema_K2::PC_Int", "DefaultValue": "10"},
   { "Type": "AddVariable", "BlueprintID": "TestBLUEPRINT_ID", "VariableName": "MyResult", "PinCategory": "UEdGraphSchema_K2::PC_Int", "DefaultValue": ""},
   { "Type": "AddVariableGetNode", "BlueprintID": "TestBLUEPRINT_ID", "PropertyName": "MyVariable", "NodeID": "MyVariableGetNode" },
   { "Type": "AddVariableGetNode", "BlueprintID": "TestBLUEPRINT_ID", "PropertyName": "MyOtherVariable", "NodeID": "MyOtherVariableGetNode" },
-  { "Type": "AddFunctionNode", "BlueprintID": "TestBLUEPRINT_ID", "FunctionName": "Add_IntInt", "NodeID": "AddFunctionNode"},
+  { "Type": "AddFunctionNode", "BlueprintID": "TestBLUEPRINT_ID", "FunctionName": "KismetMathLibrary::Add_IntInt", "NodeID": "AddFunctionNode"},
   { "Type": "AddVariableSetNode", "BlueprintID": "TestBLUEPRINT_ID", "PropertyName": "MyResult", "NodeID": "MyResultSetNode"},
   { "Type": "CreateLink", "SourceNodeID": "MyVariableGetNode", "SourcePinName": "MyVariable", "DestinationNodeID": "AddFunctionNode", "DestinationPinName": "A" },
   { "Type": "CreateLink", "SourceNodeID": "MyOtherVariableGetNode", "SourcePinName": "MyOtherVariable", "DestinationNodeID": "AddFunctionNode", "DestinationPinName": "B" },
