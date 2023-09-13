@@ -51,6 +51,7 @@ Open the plugin, either via shortcut (Editor -> Editor Preferences -> Keyboard S
 Here you can select which API you want to use:
 - OpenAI: this will make a call to OpenAI API, you can tell what you want to do in natural language (only English has been tested)
 - Fake: this will reply with your input, this can be useful if you're using ChatGPT or debugging and don't want to use OpenAI credits
+- Azure: this will call your Azure deployment, make sure you've added the correct settings in Project Settings
 (TODO image)
 
 > [!NOTE]
@@ -237,6 +238,7 @@ If you're interested to see what kind of commands is supported, you can take a l
 - Inside the project, create a `Plugins` folder
 - Move this folder inside `Plugins` folder
 - In the editor, add the plugin to the project, you should see it by filtering local plugins or by name
+- Don't forget to regenerate the `.sln`: In the editor: Tools -> Refresh Visual Studio Project. That will allow you to see the plugin in sln and put breakpoints
 
 If you create a C++ project, you'll be able to set breakpoints and debug, otherwise you'll have to do the following steps for changes to be reflected:
 - Remove the plugin's `Binaries` and `Intermediate` folders
@@ -245,11 +247,10 @@ If you create a C++ project, you'll be able to set breakpoints and debug, otherw
 > [!WARNING]
 > If you've made changes in the plugin and when restarting the project it doesn't ask you to re-compile the plugins, it will not take your changes into account.
 
-TODO: A nicer way to debug than printing UE_LOG would be highly appreciated.
-
 And looking at the project's `Saved/Logs/<project_name>.log` and add logging statement in the plugin to see where the problems occurs.
 
 The first build can take quite some time, as it builds dependencies like Curl.
+It has been seen that it hangs on the first try, but killing the process and re starting solves it.
 
 ### Project structure
 

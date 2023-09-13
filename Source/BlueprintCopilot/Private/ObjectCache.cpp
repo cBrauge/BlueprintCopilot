@@ -31,3 +31,18 @@ std::optional<UK2Node*> ObjectCache::GetNode(const NodeID& nodeId) const noexcep
 
     return _nodeCache.at(nodeId);
 }
+
+void ObjectCache::UpsertGraph(const GraphID& graphId, UEdGraph* graph) noexcept
+{
+    _graphCache[graphId] = graph;
+}
+
+std::optional<UEdGraph*> ObjectCache::GetGraph(const GraphID& graphId) const noexcept
+{
+    if (_graphCache.find(graphId) == _graphCache.end())
+    {
+        return std::nullopt;
+    }
+
+    return _graphCache.at(graphId);
+}

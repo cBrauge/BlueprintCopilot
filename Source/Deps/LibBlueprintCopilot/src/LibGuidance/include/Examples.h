@@ -149,7 +149,7 @@ namespace LibBlueprintCopilot::Guidance
 ]
     )"};
 
-        const auto ListOfInstructionsWithNotJustJsonArray{R"(
+    const auto ListOfInstructionsWithNotJustJsonArray{R"(
 Some leading stuff
 [
   {
@@ -161,7 +161,7 @@ Some leading stuff
 Some stuff at the end
 )"};
 
-        const auto ListOfInstructionsNotNumber{R"([
+    const auto ListOfInstructionsNotNumber{R"([
   { "Type": "CreateBlueprint", "BlueprintName": "TestBLUEPRINT", "BlueprintID": "TestBLUEPRINT_ID", "BlueprintType": "Actor"},
   { "Type": "AddVariable", "BlueprintID": "TestBLUEPRINT_ID", "VariableName": "MyVariable", "PinCategory": "UEdGraphSchema_K2::PC_Int", "DefaultValue": "5"},
   { "Type": "AddVariable", "BlueprintID": "TestBLUEPRINT_ID", "VariableName": "MyOtherVariable", "PinCategory": "UEdGraphSchema_K2::PC_Int", "DefaultValue": "10"},
@@ -179,5 +179,116 @@ Some stuff at the end
   { "Type": "PositionNode", "NodeID": "MyResultSetNode", "x": "600", "y": "400" },
   { "Type": "UpdateBlueprint", "BlueprintID": "TestBLUEPRINT_ID"},
   { "Type": "CreateBlueprintPermanently", "BlueprintID": "TestBLUEPRINT_ID"}
+])"};
+
+    const auto ListOfInstructionsIncrementUI{
+        R"(
+[
+    { "Type": "CreateBlueprint", "BlueprintName" : "CounterUI", "BlueprintID" : "bp_counterUI_id", "BlueprintType": "Widget"},
+    { "Type": "AddVariable", "BlueprintID" : "bp_counterUI_id", "VariableName" : "Counter", "PinCategory" : "UEdGraphSchema_K2::PC_Int", "DefaultValue" : "0"},
+    { "Type": "AssignNode", "BlueprintID" : "bp_counterUI_id", "NodeID": "event_construct_id", "NodeName": "Event Construct"},
+    { "Type": "AddFunctionNode", "BlueprintID" : "bp_counterUI_id", "FunctionName" : "UKismetSystemLibrary::SetTimerByFunctionName", "NodeID" : "set_timer_id"},
+    { "Type": "SetPinValue", "NodeID": "set_timer_id", "PinName": "FunctionName", "Value": "IncrementCounter"},
+    { "Type": "SetPinValue", "NodeID": "set_timer_id", "PinName": "Time", "Value": "1.0"},
+    { "Type": "SetPinValue", "NodeID": "set_timer_id", "PinName": "Looping", "Value": "true"},
+    { "Type": "CreateLink", "SourceNodeID": "event_construct_id", "SourcePinName": "Exec", "DestinationNodeID": "set_timer_id", "DestinationPinName": "Exec"},
+    { "Type": "AddFunctionNode", "BlueprintID" : "bp_counterUI_id", "FunctionName" : "UKismetMathLibrary::Add_IntInt", "NodeID" : "add_int_id"},
+    { "Type": "AddVariableGetNode", "BlueprintID" : "bp_counterUI_id", "PropertyName" : "Counter", "NodeID" : "get_counter_id"},
+    { "Type": "CreateLink", "SourceNodeID": "get_counter_id", "SourcePinName": "Counter", "DestinationNodeID": "add_int_id", "DestinationPinName": "A"},
+    { "Type": "SetPinValue", "NodeID": "add_int_id", "PinName": "B", "Value": "1"},
+    { "Type": "AddVariableSetNode", "BlueprintID" : "bp_counterUI_id", "PropertyName" : "Counter", "NodeID" : "set_counter_id"},
+    { "Type": "CreateLink", "SourceNodeID": "add_int_id", "SourcePinName": "ReturnValue", "DestinationNodeID": "set_counter_id", "DestinationPinName": "Counter"},
+    { "Type": "PositionNode", "NodeID": "event_construct_id", "x": 100, "y": 100},
+    { "Type": "PositionNode", "NodeID": "set_timer_id", "x": 250, "y": 100},
+    { "Type": "PositionNode", "NodeID": "get_counter_id", "x": 100, "y": 250},
+    { "Type": "PositionNode", "NodeID": "add_int_id", "x": 250, "y": 250},
+    { "Type": "PositionNode", "NodeID": "set_counter_id", "x": 400, "y": 250},
+    { "Type": "UpdateBlueprint", "BlueprintID" : "bp_counterUI_id"},
+    { "Type": "CreateBlueprintPermanently", "BlueprintID" : "bp_counterUI_id"}
+]
+)"};
+
+    const auto ListOfInstructionsNoMathNamespace{
+        R"([
+  {
+    "Type": "CreateBlueprint",
+    "BlueprintName": "value sum2",
+    "BlueprintID": "value_sum2",
+    "BlueprintType": "Actor"
+  },
+  {
+    "Type": "AddVariable",
+    "BlueprintID": "value_sum2",
+    "VariableName": "num1",
+    "PinCategory": "UEdGraphSchema_K2::PC_Int",
+    "DefaultValue": "4"
+  },
+  {
+    "Type": "AddVariable",
+    "BlueprintID": "value_sum2",
+    "VariableName": "num2",
+    "PinCategory": "UEdGraphSchema_K2::PC_Int",
+    "DefaultValue": "3"
+  },
+  {
+    "Type": "AddVariable",
+    "BlueprintID": "value_sum2",
+    "VariableName": "sum",
+    "PinCategory": "UEdGraphSchema_K2::PC_Int",
+    "DefaultValue": ""
+  },
+  {
+    "Type": "AddVariableGetNode",
+    "BlueprintID": "value_sum2",
+    "PropertyName": "num1",
+    "NodeID": "num1_get"
+  },
+  {
+    "Type": "AddVariableGetNode",
+    "BlueprintID": "value_sum2",
+    "PropertyName": "num2",
+    "NodeID": "num2_get"
+  },
+  {
+    "Type": "AddFunctionNode",
+    "BlueprintID": "value_sum2",
+    "FunctionName": "Add_IntInt",
+    "NodeID": "add_node"
+  },
+  {
+    "Type": "AddVariableSetNode",
+    "BlueprintID": "value_sum2",
+    "PropertyName": "sum",
+    "NodeID": "sum_set"
+  },
+  {
+    "Type": "CreateLink",
+    "SourceNodeID": "num1_get",
+    "SourcePinName": "ReturnValue",
+    "DestinationNodeID": "add_node",
+    "DestinationPinName": "A"
+  },
+  {
+    "Type": "CreateLink",
+    "SourceNodeID": "num2_get",
+    "SourcePinName": "ReturnValue",
+    "DestinationNodeID": "add_node",
+    "DestinationPinName": "B"
+  },
+  {
+    "Type": "CreateLink",
+    "SourceNodeID": "add_node",
+    "SourcePinName": "Result",
+    "DestinationNodeID": "sum_set",
+    "DestinationPinName": "NewValue"
+  },
+  {
+    "Type": "UpdateBlueprint",
+    "BlueprintID": "value_sum2"
+  },
+  {
+    "Type": "CreateBlueprintPermanently",
+    "BlueprintID": "value_sum2"
+  }
 ])"};
 } // namespace LibBlueprintCopilot::Guidance

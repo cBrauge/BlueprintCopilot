@@ -23,6 +23,7 @@ add_library(LibGuidance STATIC
     include/Actions/ManualOperation.h
     include/Actions/AddTextBlockToWidgetBlueprint.h
     include/Actions/AssignNode.h
+    include/Actions/SetPinValue.h
     include/ActionsDeserialization.h
     include/ParseError.h
     include/Instructions.h

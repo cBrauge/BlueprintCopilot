@@ -22,6 +22,7 @@
 #include "LibLLMFactory.h"
 #include "PerformAction.h"
 
+#include <BlueprintCopilotSettings.h>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -64,7 +65,8 @@ bool DoesNotContainManualOperations(UBlueprintCopilotWidget* widget, const std::
 /// @param user_input What the user wants to do, if using the fake model, simply put the json array of actions
 /// @param gpt_model Kind of GPT model to use: 'gpt-4', 'gpt-3.5-turbo'...
 bool Execute(UBlueprintCopilotWidget* widget, Guidance::LibLLMModel model, std::string_view api_key,
-    std::string user_input, std::string_view gpt_model, std::string_view azure_resource_name, std::string_view azure_deployment_id, std::string_view azure_api_version)
+    std::string user_input, std::string_view gpt_model, std::string_view azure_resource_name,
+    std::string_view azure_deployment_id, std::string_view azure_api_version)
 {
     if (model == Guidance::LibLLMModel::OpenAILLMModel && api_key == "")
     {
@@ -73,15 +75,18 @@ bool Execute(UBlueprintCopilotWidget* widget, Guidance::LibLLMModel model, std::
         widget->SetErrorMessage(message);
         return false;
     }
-    else if (model == Guidance::LibLLMModel::AzureLLMModel && (api_key == "" || azure_resource_name == "" || azure_deployment_id == "" || azure_api_version == ""))
+    else if (model == Guidance::LibLLMModel::AzureLLMModel
+             && (api_key == "" || azure_resource_name == "" || azure_deployment_id == "" || azure_api_version == ""))
     {
-        auto message{FString::Printf(TEXT("BlueprintCopilot: You first need to put your Azure APIKey, Azure Resource Name, Azure Deployment Id and Azure API Version in settings"))};
+        auto message{FString::Printf(TEXT("BlueprintCopilot: You first need to put your Azure APIKey, Azure Resource "
+                                          "Name, Azure Deployment Id and Azure API Version in settings"))};
         UE_LOG(LogTemp, Error, TEXT("%s"), *message);
         widget->SetErrorMessage(message);
         return false;
     }
 
-    const auto libLLM{Guidance::LibLLMFactory::CreateLibLLM(model, api_key, azure_resource_name, azure_deployment_id, azure_api_version)};
+    const auto libLLM{Guidance::LibLLMFactory::CreateLibLLM(
+        model, api_key, azure_resource_name, azure_deployment_id, azure_api_version)};
 
     const auto response{libLLM->Request(user_input, gpt_model)};
     UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: Raw response: %s"), *FString(response.c_str()));
@@ -148,8 +153,9 @@ void UBlueprintCopilot::OnTestButtonPressed(FString APIModel, FString GPTModel, 
         UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: Selected GPT Model: %s"), *GPTModel);
         UE_LOG(LogTemp, Log, TEXT("BlueprintCopilot: User input: %s"), *UserInput);
 
-        const auto model{
-            APIModel == "Fake" ? Guidance::LibLLMModel::FakeLLMModel : APIModel == "Azure" ? Guidance::LibLLMModel::AzureLLMModel : Guidance::LibLLMModel::OpenAILLMModel};
+        const auto model{APIModel == "Fake"    ? Guidance::LibLLMModel::FakeLLMModel
+                         : APIModel == "Azure" ? Guidance::LibLLMModel::AzureLLMModel
+                                               : Guidance::LibLLMModel::OpenAILLMModel};
         const auto convertedGPTModel{std::string(TCHAR_TO_UTF8(*GPTModel))};
         const auto convertedAPIKey{std::string(TCHAR_TO_UTF8(*(pluginSettings->APIKey)))};
         const auto convertedUserInput{std::string(TCHAR_TO_UTF8(*UserInput))};
@@ -157,7 +163,8 @@ void UBlueprintCopilot::OnTestButtonPressed(FString APIModel, FString GPTModel, 
         const auto convertedAzureDeploymentId{std::string(TCHAR_TO_UTF8(*(pluginSettings->AzureDeploymentId)))};
         const auto convertedAzureAPIVersion{std::string(TCHAR_TO_UTF8(*(pluginSettings->AzureAPIVersion)))};
 
-        auto success{Execute(EditorWidget, model, convertedAPIKey, convertedUserInput, convertedGPTModel, convertedAzureResourceName, convertedAzureDeploymentId, convertedAzureAPIVersion)};
+        auto success{Execute(EditorWidget, model, convertedAPIKey, convertedUserInput, convertedGPTModel,
+            convertedAzureResourceName, convertedAzureDeploymentId, convertedAzureAPIVersion)};
         // UBlueprint* blueprint{CreateBlueprint("Test", "0", "Widget")};
         // AddTextBlockToWidgetBlueprint("0", "This is a test");
         // CreateBlueprintPermanently("0");

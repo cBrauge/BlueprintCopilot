@@ -16,6 +16,7 @@
 #include "K2Node_VariableGet.h"
 #include "K2Node_VariableSet.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Kismet2/KismetEditorUtilities.h"
 #include "KismetCompiler.h"
@@ -199,12 +200,28 @@ UK2Node_VariableGet* AddVariableGetNode(
     return node;
 }
 
+
+UK2Node_CallFunction* AddFunction(
+    UFunction* function, FString functionFString, UEdGraph* eventGraph, const NodeID& nodeID)
+{
+    auto node{NewObject<UK2Node_CallFunction>(eventGraph)};
+    node->SetFromFunction(function);
+    node->AllocateDefaultPins();
+    eventGraph->AddNode(node);
+
+    objectCache.UpsertNode(nodeID, node);
+
+    return node;
+}
+
 UK2Node_CallFunction* AddFunctionNode(
     const BlueprintID& blueprintID, const std::string& functionName, const NodeID& nodeID)
 {
     auto eventGraph{GetGraph(blueprintID)};
     auto functionFString{FString(functionName.c_str())};
     // TODO check outside of math class and have to specify to openai
+    const auto kismetSystemLibraryNamespace{std::string{"UKismetSystemLibrary::"}};
+    const auto kismetSystemLibraryNamespace2{std::string{"KismetSystemLibrary::"}};
     const auto kismetMathLibraryNamespace{std::string{"UKismetMathLibrary::"}};
     const auto kismetMathLibraryNamespace2{std::string{"KismetMathLibrary::"}};
     if (functionName._Starts_with(kismetMathLibraryNamespace) || functionName._Starts_with(kismetMathLibraryNamespace2))
@@ -214,21 +231,43 @@ UK2Node_CallFunction* AddFunctionNode(
         auto function{UKismetMathLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
         if (!function)
         {
-            UE_LOG(LogTemp, Error, TEXT("Failed to find function %s"), *functionFString);
+            UE_LOG(LogTemp, Error, TEXT("Failed to find function %s in math library"), *functionFString);
             return nullptr;
         }
 
-        auto node{NewObject<UK2Node_CallFunction>(eventGraph)};
-        node->SetFromFunction(function);
-        node->AllocateDefaultPins();
-        eventGraph->AddNode(node);
+        return AddFunction(function, functionFString, eventGraph, nodeID);
+    }
+    else if (functionName._Starts_with(kismetSystemLibraryNamespace)
+             || functionName._Starts_with(kismetSystemLibraryNamespace2))
+    {
+        auto pos{functionName.find("::")};
+        auto realFunctionName{FString(functionName.substr(pos + 2).c_str())};
+        auto function{UKismetSystemLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
+        if (!function)
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to find function %s in system library"), *functionFString);
+            return nullptr;
+        }
 
-        objectCache.UpsertNode(nodeID, node);
-
-        return node;
+        return AddFunction(function, functionFString, eventGraph, nodeID);
+    }
+    // It might not give the namespace first, so let's try to force find it anyway
+    auto realFunctionName{FString(functionName.c_str())};
+    auto functionMath{UKismetMathLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
+    if (functionMath)
+    {
+        return AddFunction(functionMath, realFunctionName, eventGraph, nodeID);
+    }
+    auto functionSystem{UKismetSystemLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
+    if (functionSystem)
+    {
+        return AddFunction(functionSystem, realFunctionName, eventGraph, nodeID);
     }
 
-    UE_LOG(LogTemp, Error, TEXT("Function instantiation not supported %s"), *functionFString);
+
+    UE_LOG(LogTemp, Error,
+        TEXT("Function instantiation not supported %s, it was not found either in the Math or System library"),
+        *functionFString);
     return nullptr;
 }
 
@@ -264,10 +303,61 @@ void LogPins(UK2Node* node)
     }
 }
 
+auto GetPin(UK2Node* node, const FString& pinName)
+{
+    auto pin = node->FindPin(pinName);
+
+    if (pin)
+    {
+        return pin;
+    }
+
+    // Get node, can only be the first pin
+    if (Cast<UK2Node_VariableGet>(node))
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Failed to find pin: %s, but as it's a get, trying with default pin"), *pinName);
+        pin = node->GetPinAt(0);
+        return pin;
+    }
+
+    // Set node, can only be the incoming pin
+    if (Cast<UK2Node_VariableSet>(node))
+    {
+        for (UEdGraphPin* valuePin : node->Pins)
+        {
+            if (valuePin->Direction == EGPD_Input && valuePin->PinName != "Execute")
+            {
+                UE_LOG(LogTemp, Log, TEXT("Node is Set Node, overriding the ask for: %s, to give the input node"),
+                    *pinName);
+                return valuePin;
+            }
+        }
+
+
+        UE_LOG(LogTemp, Warning, TEXT("Failed to find pin: %s, but as it's a get, trying with default pin"), *pinName);
+        pin = node->GetPinAt(0);
+        return pin;
+    }
+
+    // Sometimes it hallucinates and changes the name of the well known pin, so trying that as well
+    if (pinName.ToLower() == "result")
+    {
+        pin = node->FindPin(FString("ReturnValue"));
+        if (pin)
+        {
+            return pin;
+        }
+    }
+
+    return pin;
+}
+
 auto ConnectPins(const NodeID& outputNodeID, const std::string& outputPinName, const NodeID& inputNodeID,
     const std::string& inputPinName)
 {
+    auto outputPinfName{FString(outputPinName.c_str())};
     auto outputNode{objectCache.GetNode(outputNodeID)};
+    auto inputPinfName{FString(inputPinName.c_str())};
     auto inputNode{objectCache.GetNode(inputNodeID)};
 
     if (!outputNode.has_value())
@@ -282,20 +372,20 @@ auto ConnectPins(const NodeID& outputNodeID, const std::string& outputPinName, c
         return false;
     }
 
-    auto outputPinfName{FString(outputPinName.c_str())};
-    auto outputPin = outputNode.value()->FindPin(outputPinfName);
-    auto inputPinfName{FString(inputPinName.c_str())};
-    auto inputPin = inputNode.value()->FindPin(inputPinfName);
+    auto outputPin = GetPin(outputNode.value(), outputPinfName);
+    auto inputPin  = GetPin(inputNode.value(), inputPinfName);
 
     if (!outputPin)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find output pin: %s"), *outputPinfName);
+        UE_LOG(LogTemp, Error, TEXT("Failed to find output pin: %s, but found those pins: "), *outputPinfName);
+        LogPins(outputNode.value());
         return false;
     }
 
     if (!inputPin)
     {
-        UE_LOG(LogTemp, Error, TEXT("Failed to find input pin: %s"), *inputPinfName);
+        UE_LOG(LogTemp, Error, TEXT("Failed to find input pin: %s, but found those pins: "), *inputPinfName);
+        LogPins(inputNode.value());
         return false;
     }
 
@@ -400,9 +490,9 @@ bool AssignNode(const BlueprintID& blueprintID, const NodeID& nodeID, const std:
         return false;
     }
 
-    for (auto graph : blueprint.value()->UbergraphPages)
+    for (auto& graph : blueprint.value()->UbergraphPages)
     {
-        for (auto graphNode : graph->Nodes)
+        for (auto& graphNode : graph->Nodes)
         {
             if (graphNode->GetFName() == FString(nodeName.c_str()))
             {
@@ -425,6 +515,83 @@ bool AssignNode(const BlueprintID& blueprintID, const NodeID& nodeID, const std:
         *FString(blueprintID.c_str()))};
     UE_LOG(LogTemp, Error, TEXT("%s"), *message);
     return false;
+}
+//
+// bool CreateCustomFunction(const BlueprintID& blueprintID, const GraphID& graphID, const std::string& functionName)
+//{
+//    auto blueprint{objectCache.GetBlueprint(blueprintID)};
+//    if (!blueprint.has_value())
+//    {
+//        HandleBlueprintNotFound(blueprintID);
+//        return false;
+//    }
+//
+//    auto graph{objectCache.GetGraph(graphID)};
+//    if (graph.has_value())
+//    {
+//        auto message{FString::Printf(TEXT("A graph named %s in blueprint %s already exists"),
+//            *FString(functionName.c_str()), *FString(blueprintID.c_str()))};
+//        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+//
+//        return false;
+//    }
+//
+//    auto newGraph{FBlueprintEditorUtils::CreateNewGraph(
+//        blueprint.value(), *FString(functionName.c_str()), UEdGraph::StaticClass(),
+//        UEdGraphSchema_K2::StaticClass())};
+//
+//    // Setting some necessary properties for the graph
+//    newGraph->bAllowDeletion = false;
+//    newGraph->SetFlags(RF_Transactional);
+//
+//    // Register the new graph with the blueprint
+//    FBlueprintEditorUtils::AddFunctionGraph(
+//        blueprint.value(), newGraph, /*bIsUserCreated=*/true, /*bIsUserCreated=*/nullptr);
+//
+//    objectCache.UpsertGraph(graphID, newGraph);
+//
+//    return true;
+//}
+
+bool SetPinValue(const NodeID& nodeID, const std::string& pinName, const std::string& value)
+{
+    auto node{objectCache.GetNode(nodeID)};
+    if (!node.has_value())
+    {
+        auto message{FString::Printf(TEXT("Node %s not found"), *FString(nodeID.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return false;
+    }
+
+    auto fPinName{FString(pinName.c_str())};
+
+    // Get the pins of the node
+    TArray<UEdGraphPin*> pins = node.value()->Pins;
+
+    // Find the pin by name
+    UEdGraphPin* targetPin = nullptr;
+    for (auto pin : pins)
+    {
+        if (pin->PinName.ToString() == fPinName)
+        {
+            targetPin = pin;
+            break;
+        }
+    }
+
+    if (!targetPin)
+    {
+        auto message{FString::Printf(TEXT("Pin %s not found on Node %s"), *fPinName, *FString(nodeID.c_str()))};
+        UE_LOG(LogTemp, Error, TEXT("%s"), *message);
+        return false;
+    }
+
+    // Set the value of the pin. Note that how you set this might vary based on the pin type and how you want to handle
+    // that. For simplicity, assuming the pin is a string type or the value can be directly set.
+    targetPin->DefaultValue = FString(value.c_str());
+
+
+    return true;
 }
 
 void LogAndDisplayError(UBlueprintCopilotWidget* widget, const FString& message)
@@ -449,7 +616,7 @@ bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::G
 bool PerformAction(UBlueprintCopilotWidget* widget, const Guidance::CreateLink& action)
 {
     const auto success{
-        ConnectPins(action.SourceNodeID, action.SourcePinName, action.DestinationNodeID, action.DestinationPinName)};
+        ::ConnectPins(action.SourceNodeID, action.SourcePinName, action.DestinationNodeID, action.DestinationPinName)};
     if (!success)
     {
         auto message{FString::Printf(TEXT("Failed to create link, check logs for more details"))};
@@ -591,6 +758,19 @@ bool PerformAction(
     if (!success)
     {
         auto message{FString::Printf(TEXT("Failed to add text block to widget blueprint"))};
+        LogAndDisplayError(widget, message);
+        return success;
+    }
+
+    return success;
+}
+
+bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::SetPinValue& action)
+{
+    const auto success{::SetPinValue(action.NodeID, action.PinName, action.Value)};
+    if (!success)
+    {
+        auto message{FString::Printf(TEXT("Failed to set pin value"))};
         LogAndDisplayError(widget, message);
         return success;
     }

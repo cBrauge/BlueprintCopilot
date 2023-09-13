@@ -23,7 +23,7 @@ auto FakeExample()
 
     // Fake API just returns the input
     // const auto response{libLLM->Request(ListOfInstruccvtions, Gpt4)};
-    const auto response{libLLM->Request(ListOfInstructionsNotNumber, Gpt4)};
+    const auto response{libLLM->Request(ListOfInstructionsIncrementUI, Gpt4)};
     return ConvertResponseToActions(response);
 }
 
@@ -59,9 +59,9 @@ void PrintActions(const auto& actions)
 
 int main()
 {
-    // const auto actions{FakeExample()};
-    //  const auto actions{RealExample()};
-    const auto actions{RealAzureExample()};
+    const auto actions{FakeExample()};
+    // const auto actions{RealExample()};
+    // const auto actions{RealAzureExample()};
 
 
     if (std::holds_alternative<ParseError>(actions))

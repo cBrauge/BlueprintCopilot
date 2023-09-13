@@ -15,6 +15,7 @@ namespace LibBlueprintCopilot::Guidance
              the companion can clearly read the blueprint when opening it. Don't also forget to finish by
              CreateBlueprintPermanently.
              Be also careful to return a json array, this is very important.
+             Do not reference a nodeID before it is created, for instance don't call CreateLink on a node that you haven't created yet.
              Be extremely careful that when you reference something, you must first make sure that you assigned it to an ID, so if you try to create a link to a default created node, you must first use AssignNode to assign it to an ID, and then use that ID to create the link.
 
              + CreateBlueprint(BlueprintName, BlueprintID, BlueprintType) : Creates a blueprint, basically calling

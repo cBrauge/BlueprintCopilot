@@ -135,6 +135,10 @@ namespace LibBlueprintCopilot::Guidance
                 {
                     actions.emplace_back(item.get<AssignNode>());
                 }
+                else if (type == "SetPinValue")
+                {
+                    actions.emplace_back(item.get<SetPinValue>());
+                }
                 else
                 {
                     nlohmann::json error_obj = {{"error", "Unknown type"}, {"full_input", item.dump()}};
