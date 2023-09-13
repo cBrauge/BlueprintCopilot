@@ -37,9 +37,8 @@ namespace LibBlueprintCopilot::Guidance
              not strings
              + UpdateBlueprint(BlueprintID) : Marks the blueprint as modified, and compile it
              + CreateBlueprintPermanently(BlueprintID) : Creates the blueprint on disk
-             + AssignNode(BlueprintID, NodeID, NodeName): Assigns an existing node in BlueprintID to NodeID, use this when you need to get things that are constructed by default, like the EventGraph, but be careful to that Graph->GetFName() will be used to find the NodeName
              + SetPinValue(NodeID, PinName, Value): Sets the value of a pin, use this when you need to set a value to a pin
-             + AddTextBlockToWidgetBlueprint(BlueprintID, Text): Adds a text block with content Text to the blueprint, the blueprint needs to be a widget blueprint
+             + AddTextBlockToWidgetBlueprint(BlueprintID, Text, NodeID, Name): Adds a text block with content Text to the blueprint named Name, the blueprint needs to be a widget blueprint. When doing this we also make the text block a variable and adds a get node in the event graph that you can reference with NodeID
              + ManualOperation(WhatToDo) : Some manual steps that your human companion will have to do
 
              Your response will be a list of actions from the above list, with the

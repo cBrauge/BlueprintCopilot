@@ -163,7 +163,8 @@ FProperty* GetProperty(const BlueprintID& blueprintID, const std::string& name)
         }
     }
 
-    UE_LOG(LogTemp, Error, TEXT("GetProperty: Failed to find Blueprint property: %s"), *FString(blueprintID.c_str()));
+    UE_LOG(LogTemp, Error, TEXT("GetProperty: Failed to find Blueprint property: %s for %s"), *FString(name.c_str()),
+        *FString(blueprintID.c_str()));
     return nullptr;
 }
 
@@ -228,6 +229,8 @@ UK2Node_CallFunction* AddFunctionNode(
     {
         auto pos{functionName.find("::")};
         auto realFunctionName{FString(functionName.substr(pos + 2).c_str())};
+
+
         auto function{UKismetMathLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
         if (!function)
         {
@@ -242,6 +245,12 @@ UK2Node_CallFunction* AddFunctionNode(
     {
         auto pos{functionName.find("::")};
         auto realFunctionName{FString(functionName.substr(pos + 2).c_str())};
+        if (realFunctionName.ToLower().Contains("settimerbyfunctionname"))
+        {
+            return AddFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName("K2_SetTimer"), realFunctionName,
+                eventGraph, nodeID);
+        }
+
         auto function{UKismetSystemLibrary::StaticClass()->FindFunctionByName(*realFunctionName)};
         if (!function)
         {
@@ -264,6 +273,11 @@ UK2Node_CallFunction* AddFunctionNode(
         return AddFunction(functionSystem, realFunctionName, eventGraph, nodeID);
     }
 
+    if (realFunctionName.ToLower().Contains("settimerbyfunctionname"))
+    {
+        return AddFunction(UKismetSystemLibrary::StaticClass()->FindFunctionByName("K2_SetTimer"), realFunctionName,
+            eventGraph, nodeID);
+    }
 
     UE_LOG(LogTemp, Error,
         TEXT("Function instantiation not supported %s, it was not found either in the Math or System library"),
@@ -299,7 +313,8 @@ void LogPins(UK2Node* node)
 {
     for (auto pin : node->Pins)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Available Pin: %s"), *pin->PinName.ToString());
+        UE_LOG(LogTemp, Warning, TEXT("Available Pin: %s with display name: %s"), *pin->PinName.ToString(),
+            *pin->GetDisplayName().ToString());
     }
 }
 
@@ -311,6 +326,15 @@ auto GetPin(UK2Node* node, const FString& pinName)
     {
         return pin;
     }
+
+    pin = node->FindPinByPredicate([&](UEdGraphPin* p) -> bool {
+        return p->GetDisplayName().CompareToCaseIgnored(FText::FromString(pinName)) == 0;
+    });
+    if (pin)
+    {
+        return pin;
+    }
+
 
     // Get node, can only be the first pin
     if (Cast<UK2Node_VariableGet>(node))
@@ -393,7 +417,8 @@ auto ConnectPins(const NodeID& outputNodeID, const std::string& outputPinName, c
     return true;
 }
 
-bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, const std::string& intext)
+bool AddTextBlockToWidgetBlueprint(
+    const BlueprintID& blueprintID, const std::string& intext, const NodeID& nodeID, const std::string& name)
 {
     auto text{FString(intext.c_str())};
     auto blueprint{objectCache.GetBlueprint(blueprintID)};
@@ -424,7 +449,7 @@ bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, const std::st
     }
 
     // Create a new TextBlock
-    auto newTextBlock = widgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), NAME_None);
+    auto newTextBlock = widgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), *FString(name.c_str()));
     if (!newTextBlock)
     {
         // Failed to construct the TextBlock
@@ -434,10 +459,28 @@ bool AddTextBlockToWidgetBlueprint(const BlueprintID& blueprintID, const std::st
     }
 
     newTextBlock->SetText(FText::FromString(text));
+    newTextBlock->bIsVariable = true;
+    widgetTree->RootWidget    = newTextBlock;
 
-    widgetTree->RootWidget = newTextBlock;
+    ::UpdateBlueprint(blueprintID);
 
-    UpdateBlueprint(blueprintID);
+    auto eventGraph{GetGraph(blueprintID)};
+    auto node = NewObject<UK2Node_VariableGet>(eventGraph);
+
+    auto property{GetProperty(blueprintID, name)};
+
+    if (!property)
+    {
+        UE_LOG(LogTemp, Error, TEXT("AddTextBlock: Failed to find one or more Blueprint property: %s"),
+            *FString(name.c_str()));
+        return false;
+    }
+    node->VariableReference.SetFromField<FProperty>(property, false);
+    node->AllocateDefaultPins();
+    eventGraph->AddNode(node);
+
+
+    objectCache.UpsertNode(nodeID, node);
 
     return true;
 }
@@ -494,6 +537,7 @@ bool AssignNode(const BlueprintID& blueprintID, const NodeID& nodeID, const std:
     {
         for (auto& graphNode : graph->Nodes)
         {
+            UE_LOG(LogTemp, Error, TEXT("Here: %s"), *(graphNode->GetFName().ToString()));
             if (graphNode->GetFName() == FString(nodeName.c_str()))
             {
                 auto k2Node = Cast<UK2Node>(graphNode.Get());
@@ -754,7 +798,7 @@ bool PerformAction(UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::G
 bool PerformAction(
     UBlueprintCopilotWidget* widget, const LibBlueprintCopilot::Guidance::AddTextBlockToWidgetBlueprint& action)
 {
-    const auto success{::AddTextBlockToWidgetBlueprint(action.BlueprintID, action.Text)};
+    const auto success{::AddTextBlockToWidgetBlueprint(action.BlueprintID, action.Text, action.NodeID, action.Name)};
     if (!success)
     {
         auto message{FString::Printf(TEXT("Failed to add text block to widget blueprint"))};
