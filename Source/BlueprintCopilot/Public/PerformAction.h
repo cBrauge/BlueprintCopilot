@@ -537,8 +537,7 @@ bool AssignNode(const BlueprintID& blueprintID, const NodeID& nodeID, const std:
     {
         for (auto& graphNode : graph->Nodes)
         {
-            UE_LOG(LogTemp, Error, TEXT("Here: %s"), *(graphNode->GetFName().ToString()));
-            if (graphNode->GetFName() == FString(nodeName.c_str()))
+            if (graphNode->GetFName().ToString() == FString(nodeName.c_str()))
             {
                 auto k2Node = Cast<UK2Node>(graphNode.Get());
                 if (!k2Node)
